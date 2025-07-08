@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ t("Hiérarchie des catégories") }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        ul.nested {
+            list-style-type: none;
+            padding-left: 1.5rem;
+        }
+        .toggle-btn {
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 4px;
+            color: #007bff;
+            display: inline-block;
+            width: 1.5em;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+        .badge-reponse {
+            background-color: #0d6efd;
+            font-size: 0.7rem;
+        }
+        li.category-item {
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+
+    <!-- 🌐 Sélecteur de langue -->
+    <style>
+    .active-lang {
+        font-weight: bold;
+        color: #0d6efd;
+        text-decoration: underline;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+    .lang-link {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="text-end mb-3">
+    {% if get_locale() == 'fr' %}
+        <span class="active-lang">🇫🇷</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+    {% endif %}
+
+    {% if get_locale() == 'ar' %}
+        <span class="active-lang">🇸🇦</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
+    {% endif %}
+
+    {% if get_locale() == 'en' %}
+        <span class="active-lang">🇬🇧</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
+    {% endif %}
+</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">{{ t("Hiérarchie des catégories") }}</h3>
+        <input type="text" id="searchInput" class="form-control w-25" placeholder="🔍 {{ t('Rechercher une catégorie') }}">
+    </div>
+
+    {% macro render_tree(nodes) %}
+        <ul class="nested">
+            {% for node in nodes %}
+                <li class="category-item" data-name="{{ node.translated_name | lower }}">
+                    {% if node.children and node.children|length > 0 %}
+                        <span class="toggle-btn" onclick="toggleChildren(this)">➖</span>
+                    {% else %}
+                        <span class="toggle-btn" style="visibility: hidden;">•</span>
+                    {% endif %}
+                    <strong>
+                        {% if node.level == 0 %}
+                            🧱 {{ node.translated_name }}
+                        {% else %}
+                            {{ "↳" * node.level }} {{ node.translated_name }}
+                        {% endif %}
+                    </strong>
+                    {% if node.response_count > 0 %}
+                        <span class="badge bg-info text-dark badge-reponse">{{ node.response_count }} {{ t("réponses") }}</span>
+                    {% endif %}
+                    <a href="{{ url_for('edit_category', id=node.id) }}" class="btn btn-sm btn-warning ms-2">{{ t("Modifier") }}</a>
+                    <form action="{{ url_for('delete_category', id=node.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger"
+                                onclick="return confirm('{{ t("Supprimer cette catégorie ?") }}');">{{ t("Supprimer") }}</button>
+                    </form>
+                    <a href="{{ url_for('add_category') }}?parent_id={{ node.id }}" class="btn btn-sm btn-success">{{ t("Sous-catégorie") }}</a>
+                    {% if not node.children %}
+                        <a href="{{ url_for('responses_by_category', category_id=node.id) }}" class="btn btn-sm btn-outline-primary">
+                            📄 {{ t("Réponses") }}
+                        </a>
+                    {% endif %}
+                    {% if node.children %}
+                        {{ render_tree(node.children) }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endmacro %}
+
+    {{ render_tree(tree) }}
+
+    <div class="mt-4">
+        <a href="{{ url_for('add_category') }}" class="btn btn-success">➕ {{ t("Ajouter une catégorie") }}</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">{{ t("Retour au tableau de bord") }}</a>
+    </div>
+</div>
+
+<script>
+function toggleChildren(btn) {
+    const ul = btn.parentElement.querySelector("ul");
+    if (ul) {
+        ul.classList.toggle("hidden");
+        btn.textContent = ul.classList.contains("hidden") ? "➕" : "➖";
+    }
+}
+
+document.getElementById("searchInput").addEventListener("input", function () {
+    const term = this.value.toLowerCase();
+
+    document.querySelectorAll(".category-item").forEach(function (item) {
+        item.style.display = 'none';
+    });
+
+    document.querySelectorAll(".category-item").forEach(function (item) {
+        const name = item.getAttribute("data-name");
+        if (name.includes(term)) {
+            item.style.display = '';
+            let parent = item.parentElement.closest(".category-item");
+            while (parent) {
+                parent.style.display = '';
+                const sublist = parent.querySelector("ul");
+                if (sublist) sublist.classList.remove("hidden");
+
+                const toggle = parent.querySelector(".toggle-btn");
+                if (toggle) toggle.textContent = "➖";
+
+                parent = parent.parentElement.closest(".category-item");
+            }
+        }
+    });
+
+    if (term === '') {
+        document.querySelectorAll(".category-item").forEach(function (item) {
+            item.style.display = '';
+        });
+    }
+});
+
+setTimeout(() => {
+    document.querySelectorAll('.flash-message').forEach(el => el.remove());
+}, 3000);
+</script>
+</body>
+</html>

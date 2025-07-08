@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ t("edit_response_title") }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .alert {
+            transition: opacity 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+
+    <!-- 🌐 Sélecteur de langue -->
+    <style>
+    .active-lang {
+        font-weight: bold;
+        color: #0d6efd;
+        text-decoration: underline;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+    .lang-link {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="text-end mb-3">
+    {% if get_locale() == 'fr' %}
+        <span class="active-lang">🇫🇷</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+    {% endif %}
+
+    {% if get_locale() == 'ar' %}
+        <span class="active-lang">🇸🇦</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
+    {% endif %}
+
+    {% if get_locale() == 'en' %}
+        <span class="active-lang">🇬🇧</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
+    {% endif %}
+</div>
+
+
+    <!-- ✅ Messages flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h2 class="mb-4">{{ t("edit_response_heading") }}</h2>
+
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('edit_response', response_id=response.id) }}">
+
+        <!-- Choix catégorie -->
+        <div class="mb-3">
+            <label for="category_id" class="form-label">{{ t("category") }}</label>
+            <select class="form-select" id="category_id" name="category_id" required>
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if category.id == response.category_id %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Type -->
+        <div class="mb-3">
+            <label for="type" class="form-label">{{ t("response_type") }}</label>
+            <select class="form-select" id="type" name="type" required>
+                {% for opt in ['text', 'link', 'file', 'contact', 'chat'] %}
+                    <option value="{{ opt }}" {% if response.type == opt %}selected{% endif %}>{{ t(opt) }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- ✅ Contenu principal (détecté automatiquement) -->
+        <div class="mb-3">
+            <label for="answer_fr" class="form-label">{{ t("source_content_detected") }}</label>
+            <textarea class="form-control" id="answer_fr" name="answer_fr" rows="3" required>{{ response.answer_fr }}</textarea>
+            <small class="form-text text-muted">{{ t("source_field_description") }}</small>
+        </div>
+
+        <!-- Traduction EN -->
+        <div class="mb-3">
+            <label for="answer_en" class="form-label">{{ t("translation_en") }}</label>
+            <textarea class="form-control" id="answer_en" name="answer_en" rows="2">{{ response.answer_en }}</textarea>
+        </div>
+
+        <!-- Traduction AR -->
+        <div class="mb-3">
+            <label for="answer_ar" class="form-label">{{ t("translation_ar") }}</label>
+            <textarea class="form-control" id="answer_ar" name="answer_ar" rows="2">{{ response.answer_ar }}</textarea>
+        </div>
+
+        <!-- Fichier (optionnel) -->
+        <div class="mb-3">
+            <label for="file" class="form-label">{{ t("upload_file_optional") }}</label>
+            <input type="file" class="form-control" id="file" name="file">
+        </div>
+
+        <button type="submit" class="btn btn-success">{{ t("save_changes") }}</button>
+        <a href="{{ url_for('responses_by_category', category_id=response.category_id) }}" class="btn btn-secondary">{{ t("cancel") }}</a>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+setTimeout(function() {
+    document.querySelectorAll('.flash-message').forEach(function(el) {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+    });
+}, 3000);
+</script>
+</body>
+</html>

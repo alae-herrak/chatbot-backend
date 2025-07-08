@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ t("responses_for") }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .alert {
+            transition: opacity 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+
+    <!-- 🌐 Sélecteur de langue -->
+    <style>
+    .active-lang {
+        font-weight: bold;
+        color: #0d6efd;
+        text-decoration: underline;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+    .lang-link {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="text-end mb-3">
+    {% if get_locale() == 'fr' %}
+        <span class="active-lang">🇫🇷</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+    {% endif %}
+
+    {% if get_locale() == 'ar' %}
+        <span class="active-lang">🇸🇦</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
+    {% endif %}
+
+    {% if get_locale() == 'en' %}
+        <span class="active-lang">🇬🇧</span>
+    {% else %}
+        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
+    {% endif %}
+</div>
+
+
+    <!-- ✅ Messages flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- 🧠 Nom de la catégorie multilingue -->
+    <h2>{{ t("responses_for_category") }}:
+        <strong>
+            {% if get_locale() == 'fr' %}
+                {{ category.name_fr }}
+            {% elif get_locale() == 'en' %}
+                {{ category.name_en or category.name_fr }}
+            {% elif get_locale() == 'ar' %}
+                {{ category.name_ar or category.name_fr }}
+            {% else %}
+                {{ category.name_fr }}
+            {% endif %}
+        </strong>
+    </h2>
+
+    <div class="mb-4">
+        <a href="{{ url_for('add_response_for_category', category_id=category.id) }}" class="btn btn-success">
+            {{ t("add_response_to_category") }}
+        </a>
+        <a href="{{ url_for('manage_categories') }}" class="btn btn-secondary">
+            {{ t("back_to_categories") }}
+        </a>
+    </div>
+
+    {% if responses %}
+        <ul class="list-group">
+            {% for response in responses %}
+                <li class="list-group-item">
+                    <strong>{{ t("type") }}:</strong> {{ t(response.type) }}<br>
+
+                    <!-- 🧠 Affichage dynamique propre -->
+                    <strong>{{ t("response_content_label") }}:</strong>
+                    {{ response[lang_attr] }}<br>
+
+                    {% if response.file_url %}
+                        <strong>{{ t("file") }}:</strong>
+<a href="{{ url_for('uploaded_file', filename=response.file_url.split('/')[-1].split('\\')[-1]) }}" target="_blank">{{ t("download") }}</a>
+                    {% endif %}
+
+                    <a href="{{ url_for('edit_response', response_id=response.id) }}" class="btn btn-sm btn-warning mt-2">{{ t("edit") }}</a>
+                    <a href="{{ url_for('delete_response', response_id=response.id) }}" class="btn btn-sm btn-danger mt-2" onclick="return confirm('{{ t("confirm_delete") }}');">{{ t("delete") }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="alert alert-info">{{ t("no_responses_in_category") }}</div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+setTimeout(function() {
+    document.querySelectorAll('.flash-message').forEach(function(el) {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+    });
+}, 3000);
+</script>
+</body>
+</html>
