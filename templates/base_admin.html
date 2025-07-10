@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ t("Admin Panel") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            {% if get_locale() == 'ar' %} right: 0; {% else %} left: 0; {% endif %}
+            width: 240px;
+            background-color: #343a40;
+            color: #fff;
+            padding-top: 60px;
+        }
+
+        .sidebar a {
+            color: #adb5bd;
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            display: block;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background-color: #495057;
+            color: #fff;
+        }
+
+        .sidebar i {
+            margin-right: 10px;
+        }
+
+        .main-content {
+            margin-{{ 'right' if get_locale() == 'ar' else 'left' }}: 240px;
+            padding: 1.5rem;
+        }
+
+        .navbar-custom {
+            position: fixed;
+            top: 0;
+            {{ 'right' if get_locale() == 'ar' else 'left' }}: 0;
+            width: 100%;
+            z-index: 1030;
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 0.5rem 1.5rem;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lang-switcher a {
+            margin: 0 0.25rem;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .lang-switcher .active {
+            color: #0d6efd;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Navbar -->
+<nav class="navbar-custom">
+    <div><strong>{{ t("Bonjour") }}, Admin</strong></div>
+    <div class="lang-switcher">
+        {% for code, flag in [('fr', '🇫🇷'), ('en', '🇬🇧'), ('ar', '🇸🇦')] %}
+            {% if get_locale() == code %}
+                <span class="active">{{ flag }}</span>
+            {% else %}
+                <a href="{{ url_for('set_language', lang_code=code) }}">{{ flag }}</a>
+            {% endif %}
+        {% endfor %}
+        <a href="{{ url_for('logout') }}" class="ms-3 text-danger"><i class="bi bi-box-arrow-right"></i></a>
+    </div>
+</nav>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <a href="#" class="active"><i class="bi bi-house-door"></i> {{ t("Tableau de bord") }}</a>
+    <a href="{{ url_for('manage_categories') }}"><i class="bi bi-folder"></i> {{ t("Catégories") }}</a>
+    <a href="{{ url_for('responses_by_category') }}"><i class="bi bi-chat-dots"></i> {{ t("Réponses") }}</a>
+    {% if session.get('role') == 'superadmin' %}
+    <a href="{{ url_for('manage_admins') }}"><i class="bi bi-person-gear"></i> {{ t("Admins") }}</a>
+    {% endif %}
+</div>
+
+<!-- Main content -->
+<div class="main-content">
+    {% block content %}
+    <h3>{{ t("Bienvenue dans le panneau d'administration") }}</h3>
+    <p>{{ t("Ceci est un exemple de contenu que vous pouvez remplacer.") }}</p>
+    {% endblock %}
+</div>
+
+</body>
+</html>

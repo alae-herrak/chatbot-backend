@@ -1,0 +1,104 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": [
+        "Bonjour", "Salut", "Bonsoir", "Hello", "Hi", "Hey",
+        "السلام عليكم", "مرحبا", "أهلاً", "صباح الخير", "مساء الخير"
+      ],
+      "responses": {
+        "fr": [
+          "Bonjour ! Comment puis-je vous aider ?",
+          "Salut, je suis là pour vous accompagner."
+        ],
+        "ar": [
+          "مرحبا! كيف يمكنني مساعدتك؟",
+          "أهلاً وسهلاً! أنا هنا لمساعدتك."
+        ],
+        "en": [
+          "Hello! How can I assist you today?",
+          "Hi there! Ready to help you."
+        ]
+      }
+    },
+    {
+      "tag": "goodbye",
+      "patterns": [
+        "Au revoir", "À bientôt", "Bye", "See you", "Goodbye",
+        "مع السلامة", "إلى اللقاء", "أراك لاحقًا"
+      ],
+      "responses": {
+        "fr": [
+          "Au revoir ! N'hésitez pas à revenir.",
+          "À très bientôt !"
+        ],
+        "ar": [
+          "مع السلامة! نحن دائمًا هنا لمساعدتك.",
+          "إلى اللقاء! نتمنى لك يومًا سعيدًا."
+        ],
+        "en": [
+          "Goodbye! Feel free to come back anytime."
+        ]
+      }
+    },
+    {
+      "tag": "thanks",
+      "patterns": [
+        "Merci", "Merci beaucoup", "Thanks", "Thank you",
+        "شكرا", "شكرا جزيلا", "ألف شكر"
+      ],
+      "responses": {
+        "fr": [
+          "Avec plaisir ",
+          "Je suis là pour ça !"
+        ],
+        "ar": [
+          "لا شكر على واجب!",
+          "على الرحب والسعة!"
+        ],
+        "en": [
+          "You're welcome!"
+        ]
+      }
+    },
+    {
+      "tag": "no_answer",
+      "patterns": [
+        "???", "...", "?", "!!!!", "Tu es là ?", "Est-ce que tu peux répondre ?",
+        "أين أنت؟", "هل يمكنك مساعدتي؟", "؟؟؟"
+      ],
+      "responses": {
+        "fr": [
+          "Je suis là ! Posez-moi une question claire ",
+          "Désolé, je n'ai pas compris. Pouvez-vous reformuler ?"
+        ],
+        "ar": [
+          "أنا هنا! فقط أعد صياغة سؤالك من فضلك."
+        ],
+        "en": [
+          "Please rephrase your question so I can help you!"
+        ]
+      }
+    },
+    {
+      "tag": "identity",
+      "patterns": [
+        "Qui es-tu ?", "C'est quoi ce bot ?", "Tu fais quoi ?", "Tu sers à quoi ?",
+        "ما هذا؟", "من أنت؟", "ما هو عملك؟", "ماذا تستطيع أن تفعل؟",
+        "Who are you?", "What is this?", "What can you do?"
+      ],
+      "responses": {
+        "fr": [
+          "Je suis un assistant pour vous guider dans vos démarches administratives.",
+          "Je suis un chatbot intelligent, là pour répondre à vos questions."
+        ],
+        "ar": [
+          "أنا مساعد رقمي لأساعدك في وثائقك الإدارية."
+        ],
+        "en": [
+          "I'm a helpful assistant for administrative services."
+        ]
+      }
+    }
+  ]
+}

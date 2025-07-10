@@ -1,0 +1,7 @@
+Flask
+Flask_SQLAlchemy
+Werkzeug
+nltk
+scikit-learn
+langdetect
+sentence-transformers==5.0.0

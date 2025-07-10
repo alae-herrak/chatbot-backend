@@ -1,85 +1,230 @@
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <title>{{ t("Dashboard Admin") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .alert {
-            transition: opacity 0.5s ease-out;
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f8f9fa;
+            transition: padding-left 0.3s ease, padding-right 0.3s ease;
+        }
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            bottom: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 220px;
+            background-color: #1f2937;
+            z-index: 1000;
+        }
+        .sidebar.collapsed {
+            transform: translateX({% if get_locale() == 'ar' %}100%{% else %}-100%{% endif %});
+        }
+        .sidebar .nav-link {
+            color: #cbd5e0;
+            padding: 15px 20px;
+        }
+        .sidebar .nav-link.active {
+            background-color: #374151;
+            color: #fff;
+        }
+        .topbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            z-index: 1100;
+        }
+        .main-content {
+            margin-top: 60px;
+            padding: 2rem;
+            padding-{% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 240px;
+        }
+        body.collapsed .main-content {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
+            color: #e5e7eb;
+        }
+        .flash-message {
+            transition: opacity 0.5s ease;
+        }
+        .btn-soft {
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            color: #333;
+            min-width: 120px;
+            transition: background-color 0.2s ease;
+        }
+        .btn-soft:hover {
+            background-color: #e2e6ea;
+        }
+        .card-stats {
+            border: none;
+            background: linear-gradient(to right, #f8fafc, #eef2f7);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease;
+        }
+        .card-stats:hover {
+            transform: scale(1.02);
         }
     </style>
 </head>
-<body class="bg-light">
-<div class="container mt-5">
+<body>
 
-    <!-- 🌐 Sélecteur de langue -->
-    <style>
-    .active-lang {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: underline;
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-    .lang-link {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-</style>
-
-<div class="text-end mb-3">
-    {% if get_locale() == 'fr' %}
-        <span class="active-lang">🇫🇷</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar">
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+        <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+    </a>
+    <a class="nav-link {% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
+        <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+    </a>
+    {% if role == 'superadmin' %}
+    <a class="nav-link {% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
+        <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+    </a>
     {% endif %}
-
-    {% if get_locale() == 'ar' %}
-        <span class="active-lang">🇸🇦</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
-    {% endif %}
-
-    {% if get_locale() == 'en' %}
-        <span class="active-lang">🇬🇧</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
-    {% endif %}
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+    </a>
 </div>
 
+<!-- Topbar -->
+<div class="topbar">
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">🌐 {{ t("Langue") }}</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
+</div>
 
+<!-- Main Content -->
+<div class="main-content">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
-        {% endfor %}
-      {% endif %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
-    <div class="text-end mb-3">
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary btn-sm">{{ t("Se déconnecter") }}</a>
-    </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-3xl font-bold text-gray-800 mb-0">
+        {{ t(greeting_key) }}, {{ username }} !
+    </h2>
+    {% if role == 'superadmin' %}
+    <a href="{{ url_for('show_logs') }}" class="btn btn-soft btn-outline-secondary d-flex align-items-center gap-2">
+    <i class="fas fa-history"></i>
+    {{ t("Logs") }}
+</a>
 
-    <h3>{{ t("Bienvenue") }}, {{ username }} !</h3>
-
-    <div class="mt-4">
-        <a href="{{ url_for('manage_categories') }}" class="btn btn-primary">{{ t("Gérer les catégories") }}</a>
-
-        {% if role == 'superadmin' %}
-            <a href="{{ url_for('manage_admins') }}" class="btn btn-warning ms-2">{{ t("Gérer les administrateurs") }}</a>
-        {% endif %}
-    </div>
-
+    {% endif %}
 </div>
 
+
+    <!-- Statistiques organisées par groupe -->
+    <!-- Statistiques principales -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 py-4 px-3 h-100" style="min-height: 120px; background: linear-gradient(135deg, #e3f2fd, #bbdefb);">
+            <div class="d-flex align-items-center h-100">
+                <i class="fa fa-folder fa-2x text-primary me-3"></i>
+                <div class="my-auto">
+                    <h6 class="text-secondary mb-1">{{ t("Catégories") }}</h6>
+                    <h3 class="fw-bold text-dark mb-0">{{ total_categories }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 py-4 px-3 h-100" style="min-height: 120px; background: linear-gradient(135deg, #ede7f6, #d1c4e9);">
+            <div class="d-flex align-items-center h-100">
+                <i class="fa fa-comment-dots fa-2x text-purple me-3"></i>
+                <div class="my-auto">
+                    <h6 class="text-secondary mb-1">{{ t("Réponses") }}</h6>
+                    <h3 class="fw-bold text-dark mb-0">{{ total_responses }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Types de réponses -->
+<h5 class="text-muted mb-4 mt-4">{{ t("Types de réponses") }}</h5>
+<div class="row g-4 mb-4">
+    {% for t_type, count in type_counts.items() %}
+    <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm border-0 py-4 px-3 h-100" style="min-height: 120px; background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">
+            <div class="d-flex align-items-center h-100">
+                <i class="fa fa-tags fa-2x text-success me-3"></i>
+                <div class="my-auto">
+                    <h6 class="text-secondary mb-1">{{ t("Type") }}: {{ t(t_type) }}</h6>
+                    <h4 class="fw-semibold text-dark mb-0">{{ count }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Langues détectées -->
+<h5 class="text-muted mb-4 mt-4">{{ t("Langues détectées") }}</h5>
+<div class="row g-4 mb-4">
+    {% for lang, count in lang_counts.items() %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 py-4 px-3 h-100" style="min-height: 120px; background: linear-gradient(135deg, #eceff1, #cfd8dc);">
+            <div class="d-flex align-items-center h-100">
+                <i class="fa fa-globe fa-2x text-info me-3"></i>
+                <div class="my-auto">
+                    <h6 class="text-secondary mb-1">{{ t("Langue") }}: {{ lang.upper() }}</h6>
+                    <h4 class="fw-semibold text-dark mb-0">{{ count }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-setTimeout(function() {
-    document.querySelectorAll('.flash-message').forEach(function(el) {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 500);
-    });
-}, 3000);
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.toggle("collapsed");
+        document.body.classList.toggle("collapsed");
+    }
+
+    setTimeout(() => {
+        document.querySelectorAll('.flash-message').forEach(el => {
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 3000);
 </script>
+
 </body>
 </html>

@@ -136,6 +136,80 @@
   "Réponse ajoutée avec succès.": "تمت إضافة الرد بنجاح.",
   "Réponse modifiée avec succès.": "تم تعديل الرد بنجاح.",
   "Réponse supprimée avec succès.": "تم حذف الرد بنجاح.",
-  "invalid_credentials": "بيانات الاعتماد غير صحيحة. حاول مرة أخرى."
+  "invalid_credentials": "بيانات الاعتماد غير صحيحة. حاول مرة أخرى.",
+  "form": "نموذج",
+  "form_fields_label": "حقول النموذج",
+  "form_fields_help": "أدخل قائمة JSON للحقول. مثال: [{\"label\": \"الاسم\", \"type\": \"text\"}, {\"label\": \"البريد الإلكتروني\", \"type\": \"email\"}]",
+  "response_added_success": "تمت إضافة الرد بنجاح.",
+
+  "select_category": "-- اختر فئة --",
+  "select_subcategory": "-- اختر فئة فرعية --",
+  "chatbot_title": "روبوت المستخدم",
+  "choose_category": "يرجى اختيار فئة:",
+  "welcome_message": "يرجى إدخال معلوماتك لتسجيل الدخول",
+  "Afficher": "إظهار",
+  "Se souvenir de moi": "تذكرني",
+  "Mot de passe oublié ?": "نسيت كلمة المرور؟",
+  "welcome_admin_title": "مرحبًا",
+  "welcome_admin_subtitle": "يرجى تسجيل الدخول للمتابعة",
+  "Dashboard": "لوحة التحكم",
+  "Catégories": "الفئات",
+  "Administrateurs": "المشرفون",
+
+
+  "Langue": "اللغة",
+
+  "Nom": "الاسم",
+  "Nombre de réponses": "عدد الإجابات",
+  "search_response": "البحث عن إجابة",
+  "Rechercher un administrateur": "البحث عن مسؤول",
+  "no_content_available": "لا يوجد محتوى متاح",
+
+  "translation_fr": "ترجمة تلقائية - فرنسية",
+
+  "source_language": "اللغة الأصلية",
+
+  "enter_link": "أدخل رابطًا",
+  "enter_contact": "أدخل معلومات الاتصال",
+  "upload_file": "رفع ملف",
+  "good_morning": "صباح الخير",
+  "good_afternoon": "مساء الخير",
+  "good_evening": "مساء الخير",
+  "log_add_category": "تمت إضافة فئة",
+  "log_edit_category": "تم تعديل الفئة",
+  "log_delete_category": "تم حذف الفئة",
+
+  "log_add_response": "تمت إضافة رد",
+  "log_edit_response": "تم تعديل الرد",
+  "log_delete_response": "تم حذف الرد",
+
+  "Type": "النوع",
+
+  "Dernières actions": "أحدث الأنشطة",
+  "Voir tous les logs": "عرض جميع السجلات",
+  "logs_title": "سجل الأنشطة",
+
+  "action": "الإجراء",
+  "target_type": "الكيان",
+  "target_id": "المعرف",
+  "timestamp": "التاريخ",
+
+  "Logs": "السجلات",
+  "Types de réponses": "أنواع الإجابات",
+  "Langues détectées": "اللغات المكتشفة",
+  "language": "اللغة",
+  "logout": "تسجيل الخروج",
+  "dashboard": "لوحة التحكم",
+  "categories": "الفئات",
+  "admins": "المسؤولون",
+  "logs": "السجلات",
+
+  "Rechercher un admin": "بحث حسب المسؤول",
+  "Rechercher une cible": "بحث حسب الهدف",
+    "source_field_edit_hint": "عدّل هذا الحقل لتحديث الترجمات تلقائيًا."
+
+
+
+
 
 }

@@ -1,104 +1,215 @@
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
-    <title>{{ t("add_response_title") }} - {{ category.name }}</title>
+    <title>{{ t("add_response_title") }} - {{ category.translated_name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .alert {
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9fafb;
+            transition: padding-left 0.3s ease, padding-right 0.3s ease;
+        }
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            bottom: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 220px;
+            background-color: #1f2937;
+            border-{% if get_locale() == 'ar' %}left{% else %}right{% endif %}: 1px solid #e5e7eb;
+            z-index: 1000;
+        }
+        .sidebar .nav-link {
+            color: #cbd5e0;
+            padding: 15px 20px;
+            display: block;
+        }
+        .sidebar .nav-link.active {
+            background-color: #374151;
+            color: #fff;
+        }
+        .topbar {
+            position: fixed;
+            top: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            z-index: 1100;
+        }
+        .main-content {
+            margin-top: 60px;
+            padding: 2rem;
+            padding-{% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 240px;
+        }
+        body.collapsed .main-content {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .btn-soft {
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            color: #333;
+            min-width: 120px;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+        .btn-soft:hover {
+            background-color: #e2e6ea;
+            color: #000;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .flash-message {
             transition: opacity 0.5s ease-out;
+        }
+        body.collapsed .sidebar {
+            transform: translateX({% if get_locale() == 'ar' %}100%{% else %}-100%{% endif %});
+        }
+
+        body.collapsed .main-content {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container mt-5">
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+        <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+    </a>
+    <a class="nav-link {% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
+        <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+    </a>
+    {% if role == 'superadmin' %}
+    <a class="nav-link {% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
+        <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+    </a>
+    {% endif %}
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+    </a>
+</div>
 
-    <!-- 🌐 Sélecteur de langue -->
-    <style>
-    .active-lang {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: underline;
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-    .lang-link {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-</style>
+<!-- TOPBAR -->
+<div class="topbar">
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">🌐 {{ t("Langue") }}</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
+</div>
 
-<div class="text-end mb-3">
+<!-- MAIN CONTENT -->
+<div class="main-content d-flex justify-content-center">
+    <div class="w-100" style="max-width: 700px;">
+<h2 class="text-2xl font-bold text-gray-800 mb-4">{{ t("add_response_heading") }}
     {% if get_locale() == 'fr' %}
-        <span class="active-lang">🇫🇷</span>
+        <strong>{{ category.name_fr }}</strong>
+    {% elif get_locale() == 'en' %}
+        <strong>{{ category.name_en or category.name_fr }}</strong>
+    {% elif get_locale() == 'ar' %}
+        <strong>{{ category.name_ar or category.name_fr }}</strong>
     {% else %}
-        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+        <strong>{{ category.name_fr }}</strong>
     {% endif %}
+</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-    {% if get_locale() == 'ar' %}
-        <span class="active-lang">🇸🇦</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
-    {% endif %}
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('add_response_for_category', category_id=category.id) }}">
+    <div class="mb-3">
+        <label for="type" class="form-label">{{ t("response_type") }}</label>
+        <select class="form-select" id="type" name="type" required>
+            <option value="text">{{ t("text") }}</option>
+            <option value="link">{{ t("link") }}</option>
+            <option value="file">{{ t("file") }}</option>
+            <option value="contact">{{ t("contact") }}</option>
+        </select>
+    </div>
 
-    {% if get_locale() == 'en' %}
-        <span class="active-lang">🇬🇧</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
-    {% endif %}
-</div>
+    <div class="mb-3 d-none" id="text-input">
+        <label for="content" class="form-label">{{ t("response_content_label") }}</label>
+        <textarea class="form-control" id="content" name="content" rows="3"></textarea>
+        <small class="form-text text-muted">{{ t("auto_translate_notice") }}</small>
+    </div>
 
-    <!-- ✅ Messages flash -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+    <div class="mb-3 d-none" id="link-input">
+        <label for="link" class="form-label">{{ t("link_url") }}</label>
+        <input type="url" class="form-control" id="link" name="link">
+    </div>
 
-    <h2 class="mb-4">{{ t("add_response_heading") }} <strong>{{ category.name }}</strong></h2>
+    <div class="mb-3 d-none" id="file-input">
+        <label for="file" class="form-label">{{ t("upload_file_optional") }}</label>
+        <input type="file" class="form-control" id="file" name="file">
+    </div>
 
-    <form method="POST" enctype="multipart/form-data" action="{{ url_for('add_response_for_category', category_id=category.id) }}">
-        <!-- Type de réponse -->
-        <div class="mb-3">
-            <label for="type" class="form-label">{{ t("response_type") }}</label>
-            <select class="form-select" id="type" name="type" required>
-                <option value="text">{{ t("text") }}</option>
-                <option value="link">{{ t("link") }}</option>
-                <option value="file">{{ t("file") }}</option>
-                <option value="contact">{{ t("contact") }}</option>
-                <option value="chat">{{ t("chat") }}</option>
-            </select>
-        </div>
+    <div class="d-flex justify-content-between">
+        <button type="submit" class="btn btn-soft">{{ t("save_response") }}</button>
+        <a href="{{ url_for('responses_by_category', category_id=category.id) }}" class="btn btn-soft">{{ t("cancel") }}</a>
+    </div>
+</form>
 
-        <!-- Contenu -->
-        <div class="mb-3">
-            <label for="content" class="form-label">{{ t("response_content_label") }}</label>
-            <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
-            <small class="form-text text-muted">{{ t("auto_translate_notice") }}</small>
-        </div>
-
-        <!-- Fichier optionnel -->
-        <div class="mb-3">
-            <label for="file" class="form-label">{{ t("upload_file_optional") }}</label>
-            <input type="file" class="form-control" id="file" name="file">
-        </div>
-
-        <button type="submit" class="btn btn-success">{{ t("save_response") }}</button>
-        <a href="{{ url_for('responses_by_category', category_id=category.id) }}" class="btn btn-secondary">{{ t("cancel") }}</a>
-    </form>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-setTimeout(function() {
-    document.querySelectorAll('.flash-message').forEach(function(el) {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 500);
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.toggle("collapsed");
+        document.body.classList.toggle("collapsed");
+    }
+
+    document.getElementById("type").addEventListener("change", function () {
+        const type = this.value;
+
+        document.getElementById("text-input").classList.add("d-none");
+        document.getElementById("link-input").classList.add("d-none");
+        document.getElementById("file-input").classList.add("d-none");
+
+        if (type === "text" || type === "contact") {
+            document.getElementById("text-input").classList.remove("d-none");
+        } else if (type === "link") {
+            document.getElementById("link-input").classList.remove("d-none");
+        } else if (type === "file") {
+            document.getElementById("file-input").classList.remove("d-none");
+        }
     });
-}, 3000);
+
+    window.addEventListener("DOMContentLoaded", function () {
+        const event = new Event("change");
+        document.getElementById("type").dispatchEvent(event);
+
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(el => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 500);
+            });
+        }, 3000);
+    });
 </script>
-</body>
-</html>

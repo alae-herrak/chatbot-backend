@@ -2,7 +2,7 @@
 <html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
-    <title>{{ t("Gestion des administrateurs") }}</title>
+    <title>{{ t("logs_title") }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
@@ -22,18 +22,28 @@
             background-color: #1f2937;
             border-{% if get_locale() == 'ar' %}left{% else %}right{% endif %}: 1px solid #e5e7eb;
             z-index: 1000;
+            transition: transform 0.3s ease;
         }
         .sidebar.collapsed {
             transform: translateX({% if get_locale() == 'ar' %}100%{% else %}-100%{% endif %});
         }
-        .sidebar .nav-link {
+        .sidebar a {
             color: #cbd5e0;
-            padding: 15px 20px;
+            padding: 0.75rem 1rem;
             display: block;
+            text-decoration: none;
         }
-        .sidebar .nav-link.active {
+        .sidebar a:hover,
+        .sidebar a.active {
             background-color: #374151;
             color: #fff;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
+            color: #e5e7eb;
+            font-size: 0.9rem;
         }
         .topbar {
             position: fixed;
@@ -59,13 +69,6 @@
             padding-left: 1rem !important;
             padding-right: 1rem !important;
         }
-        .logout-btn {
-            position: absolute;
-            bottom: 1rem;
-            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
-            color: #e5e7eb;
-            font-size: 0.9rem;
-        }
         .btn-soft {
             background-color: #f1f3f5;
             border: 1px solid #ced4da;
@@ -78,8 +81,9 @@
             background-color: #e2e6ea;
             color: #000;
         }
-        .flash-message {
-            transition: opacity 0.5s ease-out;
+        .table-responsive {
+            max-height: 70vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -87,19 +91,22 @@
 
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
-    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-        <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <i class="fa fa-home me-2"></i> {{ t("dashboard") }}
     </a>
-    <a class="nav-link {% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
-        <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+    <a href="{{ url_for('manage_categories') }}" class="{% if request.endpoint == 'manage_categories' %}active{% endif %}">
+        <i class="fa fa-folder me-2"></i> {{ t("categories") }}
     </a>
     {% if role == 'superadmin' %}
-    <a class="nav-link {% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
-        <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+    <a href="{{ url_for('manage_admins') }}" class="{% if request.endpoint == 'manage_admins' %}active{% endif %}">
+        <i class="fa fa-users me-2"></i> {{ t("admins") }}
     </a>
     {% endif %}
+    <a href="{{ url_for('show_logs') }}" class="active">
+        <i class="fa fa-file-alt me-2"></i> {{ t("logs") }}
+    </a>
     <a href="{{ url_for('logout') }}" class="logout-btn">
-        <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+        <i class="fa fa-sign-out-alt me-1"></i> {{ t("logout") }}
     </a>
 </div>
 
@@ -109,7 +116,9 @@
         <i class="fa fa-bars"></i>
     </button>
     <div class="dropdown">
-        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">🌐 {{ t("Langue") }}</button>
+        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            🌐 {{ t("language") }}
+        </button>
         <ul class="dropdown-menu dropdown-menu-end">
             <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
             <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
@@ -120,56 +129,41 @@
 
 <!-- MAIN CONTENT -->
 <div class="main-content">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">{{ t("Liste des administrateurs") }}</h2>
+    <h2 class="text-3xl font-bold text-gray-800 mb-4">{{ t("logs_title") }}</h2>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div class="mb-4 row align-items-center">
-        <div class="col-md-8 mb-2 mb-md-0">
-            <input type="text" id="searchInput" class="form-control" placeholder="🔍 {{ t('Rechercher un administrateur') }}">
+    <div class="row mb-4">
+        <div class="col-md-6 mb-2">
+            <input type="text" id="searchAdmin" class="form-control" placeholder="🔍 {{ t('Rechercher un admin') }}">
         </div>
-        <div class="col-md-4 text-md-end">
-            <a href="{{ url_for('add_admin') }}" class="btn btn-soft btn-sm">
-                <i class="fas fa-plus"></i> {{ t("Ajouter un administrateur") }}
-            </a>
+        <div class="col-md-6 mb-2">
+            <input type="text" id="searchTarget" class="form-control" placeholder="🔍 {{ t('Rechercher une cible') }}">
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped align-middle" id="adminTable">
+    <div class="table-responsive shadow p-3 bg-white rounded">
+        <table class="table table-striped table-bordered align-middle" id="logTable">
             <thead class="table-light">
                 <tr>
-                    <th>{{ t("Nom d'utilisateur") }}</th>
-                    <th>{{ t("Rôle") }}</th>
-                    <th class="text-center">{{ t("Actions") }}</th>
+                    <th>#</th>
+                    <th>{{ t("admin") }}</th>
+                    <th>{{ t("action") }}</th>
+                    <th>{{ t("target_type") }}</th>
+                    <th>{{ t("target_id") }}</th>
+                    <th>{{ t("timestamp") }}</th>
                 </tr>
             </thead>
             <tbody>
-{% for admin in admins %}
-    <tr>
-        <td>{{ admin.username }}</td>
-        <td>{{ t(admin.role) }}</td>
-        <td class="text-center">
-            {% if admin.username == 'admin' %}
-                <span class="text-muted">{{ t("Superadmin initial (non modifiable)") }}</span>
-            {% else %}
-                <div class="d-grid gap-2 d-md-flex justify-content-center">
-                    <a href="{{ url_for('edit_admin', id=admin.id) }}" class="btn btn-sm btn-soft">{{ t("Modifier") }}</a>
-                    <form method="POST" action="{{ url_for('delete_admin', id=admin.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-soft" onclick="return confirm('{{ t('Confirmer la suppression ?') }}');">{{ t("Supprimer") }}</button>
-                    </form>
-                </div>
-            {% endif %}
-        </td>
-    </tr>
-{% endfor %}
-</tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.admin.username }}</td>
+                    <td>{{ t(log.action) }}</td>
+                    <td>{{ log.target_type }}</td>
+                    <td>{{ log.target_id or "-" }}</td>
+                    <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 </div>
@@ -181,20 +175,23 @@
         document.body.classList.toggle("collapsed");
     }
 
-    document.getElementById("searchInput").addEventListener("input", function () {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll("#adminTable tbody tr").forEach(function (row) {
-            const username = row.querySelector("td").innerText.toLowerCase();
-            row.style.display = username.includes(term) ? '' : 'none';
-        });
+    document.getElementById("searchAdmin").addEventListener("input", function () {
+        const adminTerm = this.value.toLowerCase();
+        filterLogs(adminTerm, document.getElementById("searchTarget").value.toLowerCase());
     });
 
-    setTimeout(() => {
-        document.querySelectorAll('.flash-message').forEach(el => {
-            el.style.opacity = '0';
-            setTimeout(() => el.remove(), 500);
+    document.getElementById("searchTarget").addEventListener("input", function () {
+        const targetTerm = this.value.toLowerCase();
+        filterLogs(document.getElementById("searchAdmin").value.toLowerCase(), targetTerm);
+    });
+
+    function filterLogs(adminTerm, targetTerm) {
+        document.querySelectorAll("#logTable tbody tr").forEach(function (row) {
+            const admin = row.children[1].innerText.toLowerCase();
+            const target = row.children[4].innerText.toLowerCase();
+            row.style.display = admin.includes(adminTerm) && target.includes(targetTerm) ? '' : 'none';
         });
-    }, 3000);
+    }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

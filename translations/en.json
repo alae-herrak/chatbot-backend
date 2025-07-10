@@ -132,7 +132,85 @@
   "category_added_success": "Category added successfully.",
   "Réponse ajoutée avec succès.": "Response added successfully.",
   "Réponse modifiée avec succès.": "Response updated successfully.",
-  "Réponse supprimée avec succès.": "Response deleted successfully."
+  "Réponse supprimée avec succès.": "Response deleted successfully.",
+  "form": "Form",
+  "form_fields_label": "Form fields",
+  "form_fields_help": "Enter a JSON list of fields. Example: [{\"label\": \"Name\", \"type\": \"text\"}, {\"label\": \"Email\", \"type\": \"email\"}]",
+  "response_added_success": "Response added successfully.",
+  "select_category": "-- Select a category --",
+  "select_subcategory": "-- Select a subcategory --",
+  "chatbot_title": "User Chatbot",
+  "welcome_message": "👋 Hello, how can I help you?",
+  "choose_category": "Please choose a category:",
+  "Afficher": "Show",
+  "Se souvenir pendant 30 jours": "Remember for 30 days",
+  "Mot de passe oublié ?": "Forgot password?",
+  "welcome_admin_title": "Welcome",
+  "welcome_admin_subtitle": "Log in to continue",
+  "Se souvenir de moi": "Remember me",
+
+  "Langue": "Language",
+  "Dashboard": "Dashboard",
+  "Catégories": "Categories",
+  "Administrateurs": "Administrators",
+
+  "Nom": "Name",
+  "Nombre de réponses": "Number of answers",
+  "search_response": "Search a response",
+  "Rechercher un administrateur": "Search an administrator",
+  "no_content_available": "No content available",
+  "translation_fr": "Automatic Translation - French",
+
+  "source_language": "Source Language",
+
+  "enter_link": "Enter a link",
+  "enter_contact": "Enter contact information",
+  "upload_file": "Upload file",
+  "good_morning": "Good morning",
+  "good_afternoon": "Good afternoon",
+  "good_evening": "Good evening",
+  "log_add_category": "Category added",
+  "log_edit_category": "Category edited",
+  "log_delete_category": "Category deleted",
+
+  "log_add_response": "Response added",
+  "log_edit_response": "Response edited",
+  "log_delete_response": "Response deleted",
+
+
+  "Type": "Type",
+
+  "Dernières actions": "Recent actions",
+  "Voir tous les logs": "See all logs",
+  "logs_title": "Action logs",
+  "action": "Action",
+  "target_type": "Target",
+  "target_id": "ID",
+  "timestamp": "Date",
+
+  "Logs": "Logs",
+
+  "Types de réponses": "Response Types",
+
+  "Langues détectées": "Detected Languages",
+  "language": "Language",
+  "logout": "Log out",
+  "dashboard": "Dashboard",
+  "categories": "Categories",
+  "admins": "Administrators",
+  "logs": "Logs",
+
+  "Rechercher un admin": "Search by admin",
+  "Rechercher une cible": "Search by target",
+  "source_field_edit_hint": "Edit this field to automatically update the translations.",
+  "Langue source": "Source language",
+  "Langue source": "اللغة المصدر"
+
+
+
+
+
+
 
 
 }

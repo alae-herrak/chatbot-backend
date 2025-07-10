@@ -1,121 +1,217 @@
+<!-- ✅ FICHIER COMPLET `responses_by_category.html` déjà corrigé et prêt -->
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
-    <title>{{ t("responses_for") }}</title>
+    <title>{{ t("Réponses associées à une catégorie") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .alert {
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9fafb;
+            transition: padding-left 0.3s ease, padding-right 0.3s ease;
+        }
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            bottom: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 220px;
+            background-color: #1f2937;
+            border-{% if get_locale() == 'ar' %}left{% else %}right{% endif %}: 1px solid #e5e7eb;
+            z-index: 1000;
+        }
+        .sidebar.collapsed {
+            transform: translateX({% if get_locale() == 'ar' %}100%{% else %}-100%{% endif %});
+        }
+        .sidebar .nav-link {
+            color: #cbd5e0;
+            padding: 15px 20px;
+            display: block;
+        }
+        .sidebar .nav-link.active {
+            background-color: #374151;
+            color: #fff;
+        }
+        .topbar {
+            position: fixed;
+            top: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            z-index: 1100;
+        }
+        .main-content {
+            margin-top: 60px;
+            padding: 2rem;
+            padding-{% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 240px;
+        }
+        body.collapsed .main-content {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .btn-soft {
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            color: #333;
+            min-width: 100px;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+        .btn-soft:hover {
+            background-color: #e2e6ea;
+            color: #000;
+        }
+        .flash-message {
             transition: opacity 0.5s ease-out;
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container mt-5">
-
-    <!-- 🌐 Sélecteur de langue -->
-    <style>
-    .active-lang {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: underline;
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-    .lang-link {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-</style>
-
-<div class="text-end mb-3">
-    {% if get_locale() == 'fr' %}
-        <span class="active-lang">🇫🇷</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+        <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+    </a>
+    <a class="nav-link {% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
+        <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+    </a>
+    {% if role == 'superadmin' %}
+    <a class="nav-link {% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
+        <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+    </a>
     {% endif %}
-
-    {% if get_locale() == 'ar' %}
-        <span class="active-lang">🇸🇦</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
-    {% endif %}
-
-    {% if get_locale() == 'en' %}
-        <span class="active-lang">🇬🇧</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
-    {% endif %}
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+    </a>
 </div>
 
+<!-- TOPBAR -->
+<div class="topbar">
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">🌐 {{ t("Langue") }}</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
+</div>
 
-    <!-- ✅ Messages flash -->
+<!-- MAIN -->
+<div class="main-content">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
-        {% endfor %}
-      {% endif %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
-    <!-- 🧠 Nom de la catégorie multilingue -->
-    <h2>{{ t("responses_for_category") }}:
-        <strong>
-            {% if get_locale() == 'fr' %}
-                {{ category.name_fr }}
-            {% elif get_locale() == 'en' %}
-                {{ category.name_en or category.name_fr }}
-            {% elif get_locale() == 'ar' %}
-                {{ category.name_ar or category.name_fr }}
-            {% else %}
-                {{ category.name_fr }}
-            {% endif %}
-        </strong>
-    </h2>
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h2 class="fw-bold">
+                {{ t("responses_for_category") }} :
+                {% if get_locale() == 'fr' %}{{ category.name_fr }}
+                {% elif get_locale() == 'en' %}{{ category.name_en or category.name_fr }}
+                {% elif get_locale() == 'ar' %}{{ category.name_ar or category.name_fr }}
+                {% endif %}
+            </h2>
+        </div>
+    </div>
 
-    <div class="mb-4">
-        <a href="{{ url_for('add_response_for_category', category_id=category.id) }}" class="btn btn-success">
-            {{ t("add_response_to_category") }}
-        </a>
-        <a href="{{ url_for('manage_categories') }}" class="btn btn-secondary">
-            {{ t("back_to_categories") }}
-        </a>
+    <div class="mb-4 row align-items-center">
+        <div class="col-md-8 mb-2 mb-md-0">
+            <input type="text" id="searchInput" class="form-control" placeholder="🔍 {{ t('search_response') }}">
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('add_response_for_category', category_id=category.id) }}" class="btn btn-soft btn-sm">
+                <i class="fas fa-plus"></i> {{ t("add_response_heading") }}
+            </a>
+        </div>
     </div>
 
     {% if responses %}
-        <ul class="list-group">
-            {% for response in responses %}
-                <li class="list-group-item">
-                    <strong>{{ t("type") }}:</strong> {{ t(response.type) }}<br>
+        {% for response in responses %}
+            <div class="card response-card mb-3">
+                <div class="card-body">
+                    <p><strong>{{ t("type") }}:</strong> {{ t(response.type) }}</p>
 
-                    <!-- 🧠 Affichage dynamique propre -->
-                    <strong>{{ t("response_content_label") }}:</strong>
-                    {{ response[lang_attr] }}<br>
-
-                    {% if response.file_url %}
-                        <strong>{{ t("file") }}:</strong>
-<a href="{{ url_for('uploaded_file', filename=response.file_url.split('/')[-1].split('\\')[-1]) }}" target="_blank">{{ t("download") }}</a>
+                    {% if response.type == 'text' %}
+                        <p><strong>{{ t("response_content_label") }}:</strong>
+                            {{ response[lang_attr] or t("no_content_available") }}
+                        </p>
+                    {% elif response.type in ['link', 'contact'] %}
+                        <p><strong>{{ t("response_content_label") }}:</strong>
+                            {{ response[lang_attr] or response.answer_fr or response.answer_en or response.answer_ar or t("no_content_available") }}
+                        </p>
+                    {% elif response.type == 'file' %}
+                        {% if response.file_url %}
+                            <p><strong>{{ t("file") }}:</strong>
+                                <a href="{{ url_for('uploaded_file', filename=response.file_url.split('/')[-1].split('\\')[-1]) }}" target="_blank">{{ t("download") }}</a>
+                            </p>
+                        {% else %}
+                            <p class="text-muted">{{ t("no_content_available") }}</p>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">{{ t("no_content_available") }}</p>
                     {% endif %}
 
-                    <a href="{{ url_for('edit_response', response_id=response.id) }}" class="btn btn-sm btn-warning mt-2">{{ t("edit") }}</a>
-                    <a href="{{ url_for('delete_response', response_id=response.id) }}" class="btn btn-sm btn-danger mt-2" onclick="return confirm('{{ t("confirm_delete") }}');">{{ t("delete") }}</a>
-                </li>
-            {% endfor %}
-        </ul>
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="{{ url_for('edit_response', response_id=response.id) }}" class="btn btn-sm btn-soft">{{ t("edit") }}</a>
+                        <a href="{{ url_for('delete_response', response_id=response.id) }}" class="btn btn-sm btn-soft" onclick="return confirm('{{ t('confirm_delete') }}');">{{ t("delete") }}</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
     {% else %}
         <div class="alert alert-info">{{ t("no_responses_in_category") }}</div>
     {% endif %}
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- JS -->
 <script>
-setTimeout(function() {
-    document.querySelectorAll('.flash-message').forEach(function(el) {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 500);
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.toggle("collapsed");
+        document.body.classList.toggle("collapsed");
+    }
+
+    document.getElementById("searchInput").addEventListener("input", function () {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll(".response-card").forEach(function (card) {
+            card.style.display = card.innerText.toLowerCase().includes(term) ? "block" : "none";
+        });
     });
-}, 3000);
+
+    setTimeout(() => {
+        document.querySelectorAll('.flash-message').forEach(el => {
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 3000);
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
