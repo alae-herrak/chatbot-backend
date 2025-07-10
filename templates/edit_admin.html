@@ -1,111 +1,186 @@
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
-    <title>{{ t("Modifier un administrateur") }}</title>
+    <title>{{ t("edit_admin_title") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .alert {
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9fafb;
+            transition: padding-left 0.3s ease, padding-right 0.3s ease;
+        }
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            bottom: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 220px;
+            background-color: #1f2937;
+            border-{% if get_locale() == 'ar' %}left{% else %}right{% endif %}: 1px solid #e5e7eb;
+            z-index: 1000;
+        }
+        .sidebar.collapsed {
+            transform: translateX({% if get_locale() == 'ar' %}100%{% else %}-100%{% endif %});
+        }
+        .sidebar .nav-link {
+            color: #cbd5e0;
+            padding: 15px 20px;
+            display: block;
+        }
+        .sidebar .nav-link.active {
+            background-color: #374151;
+            color: #fff;
+        }
+        .topbar {
+            position: fixed;
+            top: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            z-index: 1100;
+        }
+        .main-content {
+            margin-top: 60px;
+            padding: 2rem;
+            padding-{% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 240px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        body.collapsed .main-content {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .btn-soft {
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            color: #333;
+            min-width: 100px;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+        .btn-soft:hover {
+            background-color: #e2e6ea;
+            color: #000;
+        }
+        .flash-message {
             transition: opacity 0.5s ease-out;
         }
     </style>
 </head>
-<body class="bg-light">
-<div class="container mt-5">
+<body>
 
-    <!-- 🌐 Sélecteur de langue -->
-    <style>
-    .active-lang {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: underline;
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-    .lang-link {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-</style>
-
-<div class="text-end mb-3">
-    {% if get_locale() == 'fr' %}
-        <span class="active-lang">🇫🇷</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+        <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+    </a>
+    <a class="nav-link {% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
+        <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+    </a>
+    {% if role == 'superadmin' %}
+    <a class="nav-link {% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
+        <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+    </a>
     {% endif %}
-
-    {% if get_locale() == 'ar' %}
-        <span class="active-lang">🇸🇦</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
-    {% endif %}
-
-    {% if get_locale() == 'en' %}
-        <span class="active-lang">🇬🇧</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
-    {% endif %}
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+    </a>
 </div>
 
+<!-- TOPBAR -->
+<div class="topbar">
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">🌐 {{ t("Langue") }}</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+    <h2 class="text-3xl font-bold text-gray-800 mb-4">{{ t("Modifier l'administrateur") }}</h2>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
-        {% endfor %}
-      {% endif %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
-    <h3>{{ t("Modifier l'administrateur") }}</h3>
+    <form method="POST" class="bg-white p-4 rounded shadow-sm w-100" style="max-width: 600px;">
+    <div class="mb-3">
+        <label class="form-label">{{ t("username") }}</label>
+        <input type="text" name="username" class="form-control" value="{{ admin.username }}" required>
+    </div>
 
-    <form method="POST">
-        <div class="mb-3">
-            <label class="form-label">{{ t("Nom d'utilisateur") }}</label>
-            <input type="text" name="username" value="{{ admin.username }}" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">{{ t("Changer le mot de passe (optionnel)") }}</label>
-            <input type="password" name="password" id="password" class="form-control">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">{{ t("Confirmer le mot de passe") }}</label>
-            <input type="password" name="confirm_password" id="confirm_password" class="form-control">
-        </div>
-        <div class="form-check mb-3">
-            <input type="checkbox" class="form-check-input" id="showPassword" onclick="togglePassword()">
-            <label class="form-check-label" for="showPassword">{{ t("Afficher le mot de passe") }}</label>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">{{ t("Rôle") }}</label>
-            <select name="role" class="form-control">
-                <option value="admin" {% if admin.role == 'admin' %}selected{% endif %}>admin</option>
-                <option value="superadmin" {% if admin.role == 'superadmin' %}selected{% endif %}
-                    {% if session['username'] != 'admin' %}disabled{% endif %}>
-                    superadmin
-                </option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">{{ t("Mettre à jour") }}</button>
-        <a href="{{ url_for('manage_admins') }}" class="btn btn-secondary">{{ t("Annuler") }}</a>
-    </form>
+    <div class="mb-3">
+        <label class="form-label">{{ t("Changer le mot de passe (optionnel)") }}</label>
+        <input type="password" class="form-control" id="password" name="password">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">{{ t("confirm_password") }}</label>
+        <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+    </div>
+
+    <div class="form-check mb-3">
+        <input type="checkbox" class="form-check-input" id="showPassword" onclick="togglePassword()">
+        <label class="form-check-label" for="showPassword">{{ t("show_password") }}</label>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-soft">{{ t("Mettre à jour") }}</button>
+        <a href="{{ url_for('manage_admins') }}" class="btn btn-soft">{{ t("cancel") }}</a>
+    </div>
+</form>
+
 </div>
 
 <script>
+function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("collapsed");
+    document.body.classList.toggle("collapsed");
+}
+
 function togglePassword() {
-    const pwd = document.getElementById("password");
-    const confirm = document.getElementById("confirm_password");
+    let pwd = document.getElementById("password");
+    let confirm = document.getElementById("confirm_password");
     pwd.type = pwd.type === "password" ? "text" : "password";
     confirm.type = confirm.type === "password" ? "text" : "password";
 }
 
-setTimeout(function() {
+setTimeout(() => {
     document.querySelectorAll('.flash-message').forEach(el => {
         el.style.opacity = '0';
         setTimeout(() => el.remove(), 500);
     });
 }, 3000);
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

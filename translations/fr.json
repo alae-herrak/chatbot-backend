@@ -137,7 +137,83 @@
   "Réponse ajoutée avec succès.": "Réponse ajoutée avec succès.",
   "Réponse modifiée avec succès.": "Réponse modifiée avec succès.",
   "Réponse supprimée avec succès.": "Réponse supprimée avec succès.",
-  "invalid_credentials": "Identifiants incorrects. Veuillez réessayer."
+  "invalid_credentials": "Identifiants incorrects. Veuillez réessayer.",
+  "form": "Formulaire",
+  "form_fields_label": "Champs du formulaire",
+  "form_fields_help": "Entrez une liste JSON de champs. Exemple : [{\"label\": \"Nom\", \"type\": \"text\"}, {\"label\": \"Email\", \"type\": \"email\"}]",
+
+  "response_added_success": "Réponse ajoutée avec succès.",
+  "select_category": "-- Sélectionnez une catégorie --",
+  "select_subcategory": "-- Sélectionnez une sous-catégorie --",
+  "chatbot_title": "Chatbot Utilisateur",
+  "choose_category": "Veuillez choisir une catégorie :",
+  "welcome_message": "Veuillez entrer vos informations pour vous connecter",
+  "Afficher": "Afficher",
+  "Se souvenir pendant 30 jours": "Se souvenir pendant 30 jours",
+  "Mot de passe oublié ?": "Mot de passe oublié ?",
+  "welcome_admin_title": "Bienvenue",
+  "welcome_admin_subtitle": "Connectez-vous pour continuer",
+  "Se souvenir de moi": "Se souvenir de moi",
+  "Langue": "Langue",
+  "Dashboard": "Tableau de bord",
+  "Catégories": "Catégories",
+  "Administrateurs": "Administrateurs",
+
+
+  "Nom": "Nom",
+  "Nombre de réponses": "Nombre de réponses",
+  "search_response": "Rechercher une réponse",
+  "Rechercher un administrateur": "Rechercher un administrateur",
+  "no_content_available": "Aucun contenu disponible",
+  "translation_fr": "Traduction automatique - Français",
+  "source_language": "Langue source",
+
+  "enter_link": "Entrez un lien",
+  "enter_contact": "Entrez un contact",
+  "upload_file": "Télécharger un fichier",
+  "good_morning": "Bonjour",
+  "good_afternoon": "Bon après-midi",
+  "good_evening": "Bonsoir",
+  "log_add_category": "Ajout d'une catégorie",
+  "log_edit_category": "Modification d'une catégorie",
+  "log_delete_category": "Suppression d'une catégorie",
+
+  "log_add_response": "Ajout d'une réponse",
+  "log_edit_response": "Modification d'une réponse",
+  "log_delete_response": "Suppression d'une réponse",
+
+
+
+  "Type": "Type",
+
+  "Dernières actions": "Dernières actions",
+  "Voir tous les logs": "Voir tous les logs",
+  "logs_title": "Historique des actions",
+  "action": "Action",
+  "target_type": "Cible",
+  "target_id": "ID",
+  "timestamp": "Date",
+
+  "Logs": "Logs",
+
+  "Types de réponses": "Types de réponses",
+
+  "Langues détectées": "Langues détectées",
+  "language": "Langue",
+  "logout": "Se déconnecter",
+  "dashboard": "Tableau de bord",
+  "categories": "Catégories",
+  "admins": "Administrateurs",
+  "logs": "Logs",
+
+  "Rechercher un admin": "Rechercher un administrateur",
+  "Rechercher une cible": "Rechercher une cible",
+  "source_field_edit_hint": "Modifie ce champ pour mettre à jour automatiquement les traductions.",
+  "Langue source": "Langue source"
+
+
+
+
 
 
 }

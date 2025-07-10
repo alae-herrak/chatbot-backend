@@ -1,117 +1,215 @@
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <title>{{ t("edit_category_title") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .alert { transition: opacity 0.5s ease-out; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9fafb;
+            transition: padding-left 0.3s ease, padding-right 0.3s ease;
+        }
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            bottom: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 220px;
+            background-color: #1f2937;
+            border-{% if get_locale() == 'ar' %}left{% else %}right{% endif %}: 1px solid #e5e7eb;
+            z-index: 1000;
+        }
+        .sidebar.collapsed {
+            transform: translateX({% if get_locale() == 'ar' %}100%{% else %}-100%{% endif %});
+        }
+        .sidebar .nav-link {
+            color: #cbd5e0;
+            padding: 15px 20px;
+            display: block;
+        }
+        .sidebar .nav-link.active {
+            background-color: #374151;
+            color: #fff;
+        }
+        .topbar {
+            position: fixed;
+            top: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            z-index: 1100;
+        }
+        .main-content {
+            margin-top: 60px;
+            padding: 2rem;
+            padding-{% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 240px;
+        }
+        body.collapsed .main-content {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .btn-soft {
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            color: #333;
+            min-width: 100px;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+        .btn-soft:hover {
+            background-color: #e2e6ea;
+            color: #000;
+        }
+        .flash-message {
+            transition: opacity 0.5s ease-out;
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container mt-5">
-
-    <!-- 🌐 Sélecteur de langue -->
-    <style>
-    .active-lang {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: underline;
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-    .lang-link {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-</style>
-
-<div class="text-end mb-3">
-    {% if get_locale() == 'fr' %}
-        <span class="active-lang">🇫🇷</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+<div id="sidebar" class="sidebar">
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+        <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+    </a>
+    <a class="nav-link {% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
+        <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+    </a>
+    {% if role == 'superadmin' %}
+    <a class="nav-link {% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
+        <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+    </a>
     {% endif %}
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+    </a>
+</div>
 
-    {% if get_locale() == 'ar' %}
-        <span class="active-lang">🇸🇦</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
-    {% endif %}
+<div class="topbar">
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">🌐 {{ t("Langue") }}</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
+</div>
 
-    {% if get_locale() == 'en' %}
-        <span class="active-lang">🇬🇧</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
-    {% endif %}
+<div class="main-content d-flex flex-column align-items-center">
+<h2 class="text-2xl fw-bold mb-4">{{ t("edit_category_heading") }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+<!-- 🔁 Partie du formulaire à remplacer dans edit_category.html -->
+<form method="POST" class="bg-white p-4 rounded shadow-sm w-100" style="max-width: 600px;">
+
+    <!-- Champ source (modifiable) -->
+<div class="mb-3">
+    <label class="form-label">
+    {{ t(label_key) }} ({{ t("Langue source") }})
+</label>
+
+    <input type="text" name="{{ source_field }}" class="form-control" value="{{ source_value }}">
+    <small class="form-text text-muted">{{ t("source_field_edit_hint") }}</small>
 </div>
 
 
-    <!-- ✅ Messages flash -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+    <!-- Langue FR -->
+    {% if category.source_lang != 'fr' %}
+    <div class="mb-3">
+        <label class="form-label">{{ t("category_name_fr") }}</label>
+        <input type="text" name="name_fr" class="form-control" value="{{ category.name_fr }}">
+    </div>
+    {% endif %}
 
-    <h2 class="mb-4">{{ t("edit_category_heading") }}</h2>
+    <!-- Langue EN -->
+    {% if category.source_lang != 'en' %}
+    <div class="mb-3">
+        <label class="form-label">{{ t("category_name_en") }}</label>
+        <input type="text" name="name_en" class="form-control" value="{{ category.name_en }}">
+    </div>
+    {% endif %}
 
-    <form method="POST">
-        <!-- 🧠 Nom saisi librement (n'importe quelle langue) -->
-        <div class="mb-3">
-            <label class="form-label">{{ t("category_name_input") }}</label>
-            <input type="text" name="name_input" class="form-control" value="{{ category.name_fr or category.name_en or category.name_ar }}" required>
-            <small class="form-text text-muted">{{ t("input_any_language_hint") }}</small>
-        </div>
+    <!-- Langue AR -->
+    {% if category.source_lang != 'ar' %}
+    <div class="mb-3">
+        <label class="form-label">{{ t("category_name_ar") }}</label>
+        <input type="text" name="name_ar" class="form-control" value="{{ category.name_ar }}">
+    </div>
+    {% endif %}
 
-        <!-- 📝 Nom EN modifiable -->
-        <div class="mb-3">
-            <label class="form-label">{{ t("category_name_en") }}</label>
-            <input type="text" name="name_en" class="form-control" value="{{ category.name_en }}">
-        </div>
-
-        <!-- 📝 Nom AR modifiable -->
-        <div class="mb-3">
-            <label class="form-label">{{ t("category_name_ar") }}</label>
-            <input type="text" name="name_ar" class="form-control" value="{{ category.name_ar }}">
-        </div>
-
-        <!-- 🧭 Catégorie parente -->
-        <div class="mb-3">
-            <label class="form-label">{{ t("parent_category") }}</label>
-            <select name="parent_id" class="form-select">
-                <option value="">{{ t("no_parent_option") }}</option>
-                {% macro render_options(nodes) %}
-                    {% for node in nodes %}
-                        {% if node.id != category.id %}
-                            <option value="{{ node.id }}" {% if category.parent_id == node.id %}selected{% endif %}>
-                                {{ "-" * node.level }} {{ node.translated_name }}
-                            </option>
-                            {% if node.children %}
-                                {{ render_options(node.children) }}
-                            {% endif %}
+    <!-- Catégorie parente -->
+    <div class="mb-3">
+        <label class="form-label">{{ t("parent_category") }}</label>
+        <select name="parent_id" class="form-select">
+            <option value="">{{ t("no_parent_option") }}</option>
+            {% macro render_options(nodes) %}
+                {% for node in nodes %}
+                    {% if node.id != category.id %}
+                        <option value="{{ node.id }}" {% if category.parent_id == node.id %}selected{% endif %}>
+                            {{ "-" * node.level }} {{ node.translated_name }}
+                        </option>
+                        {% if node.children %}
+                            {{ render_options(node.children) }}
                         {% endif %}
-                    {% endfor %}
-                {% endmacro %}
-                {{ render_options(tree) }}
-            </select>
-        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endmacro %}
+            {{ render_options(tree) }}
+        </select>
+    </div>
 
-        <button type="submit" class="btn btn-success">{{ t("save_changes") }}</button>
-        <a href="{{ url_for('manage_categories') }}" class="btn btn-secondary">{{ t("cancel") }}</a>
-    </form>
+    <!-- Boutons -->
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-soft">{{ t("save_changes") }}</button>
+        <a href="{{ url_for('manage_categories') }}" class="btn btn-soft">{{ t("cancel") }}</a>
+    </div>
+</form>
+
+
 </div>
 
 <script>
-setTimeout(function() {
-    document.querySelectorAll('.flash-message').forEach(el => {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 500);
-    });
-}, 3000);
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.toggle("collapsed");
+        document.body.classList.toggle("collapsed");
+    }
+
+    setTimeout(function() {
+        document.querySelectorAll('.flash-message').forEach(el => {
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 3000);
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

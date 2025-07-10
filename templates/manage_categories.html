@@ -1,176 +1,235 @@
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <title>{{ t("Hiérarchie des catégories") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        ul.nested {
-            list-style-type: none;
-            padding-left: 1.5rem;
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9fafb;
+            transition: padding-left 0.3s ease, padding-right 0.3s ease;
         }
-        .toggle-btn {
-            cursor: pointer;
-            font-weight: bold;
-            margin-right: 4px;
-            color: #007bff;
-            display: inline-block;
-            width: 1.5em;
-            text-align: center;
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            bottom: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 220px;
+            background-color: #1f2937;
+            border-{% if get_locale() == 'ar' %}left{% else %}right{% endif %}: 1px solid #e5e7eb;
+            z-index: 1000;
         }
-        .hidden {
+        .sidebar.collapsed {
+            transform: translateX({% if get_locale() == 'ar' %}100%{% else %}-100%{% endif %});
+        }
+        .sidebar .nav-link {
+            color: #cbd5e0;
+            padding: 15px 20px;
+            display: block;
+        }
+        .sidebar .nav-link.active {
+            background-color: #374151;
+            color: #fff;
+        }
+        .topbar {
+            position: fixed;
+            top: 0;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            z-index: 1100;
+        }
+        .main-content {
+            margin-top: 60px;
+            padding: 2rem;
+            padding-{% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 240px;
+        }
+        body.collapsed .main-content {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            {% if get_locale() == 'ar' %}right{% else %}left{% endif %}: 1rem;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .hidden-row {
             display: none;
         }
-        .badge-reponse {
-            background-color: #0d6efd;
-            font-size: 0.7rem;
+        .toggle-icon {
+            cursor: pointer;
+            margin-right: 5px;
         }
-        li.category-item {
-            margin-bottom: 0.75rem;
+        .btn-soft {
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            color: #333;
+            min-width: 120px;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-soft:hover {
+            background-color: #e2e6ea;
+            color: #000;
         }
     </style>
 </head>
-<body class="bg-light">
-<div class="container mt-5">
+<body>
 
-    <!-- 🌐 Sélecteur de langue -->
-    <style>
-    .active-lang {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: underline;
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-    .lang-link {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-</style>
-
-<div class="text-end mb-3">
-    {% if get_locale() == 'fr' %}
-        <span class="active-lang">🇫🇷</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+        <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+    </a>
+    <a class="nav-link {% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
+        <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+    </a>
+    {% if role == 'superadmin' %}
+    <a class="nav-link {% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
+        <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+    </a>
     {% endif %}
-
-    {% if get_locale() == 'ar' %}
-        <span class="active-lang">🇸🇦</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
-    {% endif %}
-
-    {% if get_locale() == 'en' %}
-        <span class="active-lang">🇬🇧</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
-    {% endif %}
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+    </a>
 </div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-soft btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">🌐 {{ t("Langue") }}</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">{{ t("Hiérarchie des catégories") }}</h2>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }} mt-3 flash-message">{{ t(message) }}</div>
+                <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">{{ t("Hiérarchie des catégories") }}</h3>
-        <input type="text" id="searchInput" class="form-control w-25" placeholder="🔍 {{ t('Rechercher une catégorie') }}">
+  <div class="mb-4 row align-items-center">
+    <div class="col-md-8 mb-2 mb-md-0">
+        <input type="text" id="searchInput" class="form-control" placeholder="🔍 {{ t('Rechercher une catégorie') }}">
     </div>
-
-    {% macro render_tree(nodes) %}
-        <ul class="nested">
-            {% for node in nodes %}
-                <li class="category-item" data-name="{{ node.translated_name | lower }}">
-                    {% if node.children and node.children|length > 0 %}
-                        <span class="toggle-btn" onclick="toggleChildren(this)">➖</span>
-                    {% else %}
-                        <span class="toggle-btn" style="visibility: hidden;">•</span>
-                    {% endif %}
-                    <strong>
-                        {% if node.level == 0 %}
-                            🧱 {{ node.translated_name }}
-                        {% else %}
-                            {{ "↳" * node.level }} {{ node.translated_name }}
-                        {% endif %}
-                    </strong>
-                    {% if node.response_count > 0 %}
-                        <span class="badge bg-info text-dark badge-reponse">{{ node.response_count }} {{ t("réponses") }}</span>
-                    {% endif %}
-                    <a href="{{ url_for('edit_category', id=node.id) }}" class="btn btn-sm btn-warning ms-2">{{ t("Modifier") }}</a>
-                    <form action="{{ url_for('delete_category', id=node.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger"
-                                onclick="return confirm('{{ t("Supprimer cette catégorie ?") }}');">{{ t("Supprimer") }}</button>
-                    </form>
-                    <a href="{{ url_for('add_category') }}?parent_id={{ node.id }}" class="btn btn-sm btn-success">{{ t("Sous-catégorie") }}</a>
-                    {% if not node.children %}
-                        <a href="{{ url_for('responses_by_category', category_id=node.id) }}" class="btn btn-sm btn-outline-primary">
-                            📄 {{ t("Réponses") }}
-                        </a>
-                    {% endif %}
-                    {% if node.children %}
-                        {{ render_tree(node.children) }}
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% endmacro %}
-
-    {{ render_tree(tree) }}
-
-    <div class="mt-4">
-        <a href="{{ url_for('add_category') }}" class="btn btn-success">➕ {{ t("Ajouter une catégorie") }}</a>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">{{ t("Retour au tableau de bord") }}</a>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('add_category') }}" class="btn btn-soft btn-sm">
+            <i class="fas fa-plus"></i> {{ t("Ajouter une catégorie") }}
+        </a>
     </div>
 </div>
 
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle" id="categoryTable">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ t("Nom") }}</th>
+                    <th class="text-center">{{ t("Nombre de réponses") }}</th>
+                    <th class="text-center">{{ t("Actions") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for node in flat_tree %}
+                <tr class="category-row {% if node.level > 0 %}hidden-row parent-{{ node.parent_id }}{% endif %}" data-id="{{ node.id }}" data-parent="{{ node.parent_id }}" data-level="{{ node.level }}">
+                    <td>
+                        <span style="padding-left: {{ node.level * 20 }}px;">
+                            {% if node.has_children %}
+<i class="fas {% if get_locale() == 'ar' %}fa-caret-left{% else %}fa-caret-right{% endif %} toggle-icon" onclick="toggleChildren({{ node.id }}, this)"></i>
+                            {% else %}
+                                <i class="fas fa-circle" style="opacity: 0.3;"></i>
+                            {% endif %}
+                            {{ node.translated_name }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        {% if node.response_count > 0 %}
+                            <span class="badge bg-primary">{{ node.response_count }}</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="d-grid gap-2 d-md-flex justify-content-center">
+                            <a href="{{ url_for('edit_category', id=node.id) }}" class="btn btn-sm btn-soft">{{ t("Modifier") }}</a>
+                            <form action="{{ url_for('delete_category', id=node.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-soft" onclick="return confirm('{{ t('Supprimer cette catégorie ?') }}');">{{ t("Supprimer") }}</button>
+                            </form>
+                            <a href="{{ url_for('add_category') }}?parent_id={{ node.id }}" class="btn btn-sm btn-soft">{{ t("Sous-catégorie") }}</a>
+                           {% if not node.has_children %}
+    <a href="{{ url_for('responses_by_category', category_id=node.id) }}" class="btn btn-sm btn-soft">{{ t("Réponses") }}</a>
+{% else %}
+    <span class="btn btn-sm btn-soft invisible">Réponses</span>
+{% endif %}
+
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-function toggleChildren(btn) {
-    const ul = btn.parentElement.querySelector("ul");
-    if (ul) {
-        ul.classList.toggle("hidden");
-        btn.textContent = ul.classList.contains("hidden") ? "➕" : "➖";
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.toggle("collapsed");
+        document.body.classList.toggle("collapsed");
     }
-}
 
-document.getElementById("searchInput").addEventListener("input", function () {
-    const term = this.value.toLowerCase();
-
-    document.querySelectorAll(".category-item").forEach(function (item) {
-        item.style.display = 'none';
-    });
-
-    document.querySelectorAll(".category-item").forEach(function (item) {
-        const name = item.getAttribute("data-name");
-        if (name.includes(term)) {
-            item.style.display = '';
-            let parent = item.parentElement.closest(".category-item");
-            while (parent) {
-                parent.style.display = '';
-                const sublist = parent.querySelector("ul");
-                if (sublist) sublist.classList.remove("hidden");
-
-                const toggle = parent.querySelector(".toggle-btn");
-                if (toggle) toggle.textContent = "➖";
-
-                parent = parent.parentElement.closest(".category-item");
-            }
-        }
-    });
-
-    if (term === '') {
-        document.querySelectorAll(".category-item").forEach(function (item) {
-            item.style.display = '';
+    function toggleChildren(parentId, icon) {
+        const children = document.querySelectorAll(`.parent-${parentId}`);
+        children.forEach(child => {
+            child.classList.toggle('hidden-row');
         });
+        icon.classList.toggle('fa-caret-right');
+        icon.classList.toggle('fa-caret-down');
     }
-});
 
-setTimeout(() => {
-    document.querySelectorAll('.flash-message').forEach(el => el.remove());
-}, 3000);
+    document.getElementById("searchInput").addEventListener("input", function () {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll("#categoryTable tbody tr").forEach(function (row) {
+            const name = row.querySelector("td").innerText.toLowerCase();
+            row.style.display = name.includes(term) ? '' : 'none';
+        });
+    });
+
+    setTimeout(() => {
+        document.querySelectorAll('.flash-message').forEach(el => {
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 3000);
 </script>
+
 </body>
 </html>

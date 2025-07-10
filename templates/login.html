@@ -1,72 +1,92 @@
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}">
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <title>{{ t("Connexion Administrateur") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header text-center">
-                        {{ t("Connexion") }}
-                        <!-- 🌐 Sélecteur de langue -->
-                        <style>
-    .active-lang {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: underline;
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-    .lang-link {
-        margin-left: 0.5rem;
-        margin-right: 0.5rem;
-    }
-</style>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center relative">
 
-<div class="text-end mb-3">
-    {% if get_locale() == 'fr' %}
-        <span class="active-lang">🇫🇷</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='fr') }}" class="lang-link">🇫🇷</a>
-    {% endif %}
-
-    {% if get_locale() == 'ar' %}
-        <span class="active-lang">🇸🇦</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='ar') }}" class="lang-link">🇸🇦</a>
-    {% endif %}
-
-    {% if get_locale() == 'en' %}
-        <span class="active-lang">🇬🇧</span>
-    {% else %}
-        <a href="{{ url_for('set_language', lang_code='en') }}" class="lang-link">🇬🇧</a>
-    {% endif %}
+<!-- 🌐 Sélecteur de langue flottant -->
+<div class="absolute top-4 {% if get_locale() == 'ar' %}left-4{% else %}right-4{% endif %}">
+    <div class="dropdown">
+        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            🌐
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
 </div>
 
-                    </div>
-                    <div class="card-body">
-                        {% if error %}
-                        <div class="alert alert-danger">{{ t(error) }}</div>
-                        {% endif %}
-                        <form method="POST">
-                            <div class="mb-3">
-                                <label class="form-label">{{ t("Nom d'utilisateur") }}</label>
-                                <input type="text" class="form-control" name="username" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">{{ t("Mot de passe") }}</label>
-                                <input type="password" class="form-control" name="password" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">{{ t("Se connecter") }}</button>
-                        </form>
-                    </div>
-                </div>
+<!-- Formulaire de connexion -->
+<div class="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
+    <h2 class="text-2xl font-semibold text-center mb-2">{{ t("welcome_admin_title") }}</h2>
+    <p class="text-gray-500 text-center mb-6">{{ t("welcome_admin_subtitle") }}</p>
+
+    {% if error %}
+        <div class="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 text-sm text-center">
+            {{ t(error) }}
+        </div>
+    {% endif %}
+
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium mb-1">{{ t("Nom d'utilisateur") }}</label>
+            <input type="text" name="username" required autofocus class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">{{ t("Mot de passe") }}</label>
+            <div class="flex border border-gray-300 rounded overflow-hidden">
+                <input type="password" id="passwordField" name="password" required class="w-full px-3 py-2 focus:outline-none focus:ring-0">
+                <button type="button" class="px-3" onclick="togglePassword()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5 text-gray-500 hover:text-blue-600" viewBox="0 0 16 16">
+                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8
+                                 5.5S16 8 16 8zM1.173 8a13.133 13.133
+                                 0 0 1 1.66-2.043C4.12 4.668
+                                 5.88 3.5 8 3.5c2.12 0
+                                 3.879 1.168 5.168
+                                 2.457A13.133 13.133
+                                 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83
+                                 1.07-1.433 1.664C11.88 11.332
+                                 10.12 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134
+                                 13.134 0 0 1 1.172 8z"/>
+                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5
+                                 2.5 2.5 0 0 0 0-5zM4.5
+                                 8a3.5 3.5 0 1 1 7 0
+                                 3.5 3.5 0 0 1-7 0z"/>
+                    </svg>
+                </button>
             </div>
         </div>
-    </div>
+
+        <div class="flex items-center justify-between text-sm">
+            <label class="flex items-center">
+                <input type="checkbox" name="remember" class="mr-2">
+                {{ t("Se souvenir de moi") }}
+            </label>
+            <a href="#" class="text-blue-600 hover:underline">{{ t("Mot de passe oublié ?") }}</a>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+            {{ t("Se connecter") }}
+        </button>
+    </form>
+</div>
+
+<script>
+    function togglePassword() {
+        const field = document.getElementById('passwordField');
+        field.type = field.type === 'password' ? 'text' : 'password';
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
