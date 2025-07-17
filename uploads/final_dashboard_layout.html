@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}" dir="{% if get_locale() == 'ar' %}rtl{% else %}ltr{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ t("Dashboard Admin") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+        }
+        .topbar {
+            height: 60px;
+            background-color: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        .layout {
+            display: flex;
+            margin-top: 60px; /* Espace sous la topbar */
+        }
+        .sidebar {
+            width: 220px;
+            background-color: #1f2937;
+            min-height: calc(100vh - 60px);
+            padding-top: 1rem;
+            color: white;
+        }
+        .sidebar a {
+            display: block;
+            color: #cbd5e0;
+            padding: 12px 20px;
+            text-decoration: none;
+        }
+        .sidebar a.active, .sidebar a:hover {
+            background-color: #374151;
+            color: white;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            font-size: 0.9rem;
+        }
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            🌐
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if get_locale() == 'fr' %}active{% endif %}" href="{{ url_for('set_language', lang_code='fr') }}">🇫🇷 Français</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'en' %}active{% endif %}" href="{{ url_for('set_language', lang_code='en') }}">🇬🇧 English</a></li>
+            <li><a class="dropdown-item {% if get_locale() == 'ar' %}active{% endif %}" href="{{ url_for('set_language', lang_code='ar') }}">🇸🇦 العربية</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+            <i class="fa fa-home me-2"></i> {{ t("Dashboard") }}
+        </a>
+        <a class="{% if request.endpoint == 'manage_categories' %}active{% endif %}" href="{{ url_for('manage_categories') }}">
+            <i class="fa fa-folder me-2"></i> {{ t("Catégories") }}
+        </a>
+        {% if role == 'superadmin' %}
+        <a class="{% if request.endpoint == 'manage_admins' %}active{% endif %}" href="{{ url_for('manage_admins') }}">
+            <i class="fa fa-users me-2"></i> {{ t("Administrateurs") }}
+        </a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" class="logout-btn">
+            <i class="fa fa-sign-out-alt me-1"></i> {{ t("Se déconnecter") }}
+        </a>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} flash-message">{{ t(message) }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">
+            {{ t("Bienvenue") }}, {{ username }} !
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <h4 class="text-lg font-semibold text-gray-700 mb-2">{{ t("Total des catégories") }}</h4>
+                <p class="text-3xl font-bold text-blue-600">23</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <h4 class="text-lg font-semibold text-gray-700 mb-2">{{ t("Réponses enregistrées") }}</h4>
+                <p class="text-3xl font-bold text-green-500">78</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 text-center">
+                <h4 class="text-lg font-semibold text-gray-700 mb-2">{{ t("Administrateurs actifs") }}</h4>
+                <p class="text-3xl font-bold text-purple-500">4</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleSidebar() {
+        const sidebar = document.querySelector(".sidebar");
+        sidebar.classList.toggle("d-none");
+    }
+</script>
+
+</body>
+</html>

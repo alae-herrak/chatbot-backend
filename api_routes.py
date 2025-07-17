@@ -1,11 +1,7 @@
-from flask import Blueprint, jsonify, session
-from models import db, Category, Response
+from flask import Blueprint, jsonify
+from models import db, Category, Response, Setting
 
 api_bp = Blueprint('api', __name__)
-
-# 🔸 Langue active
-def get_lang():
-    return session.get('lang', 'fr')
 
 # 🔸 Messages multilingues
 def get_messages(lang):
@@ -52,11 +48,15 @@ def get_navigation(stage):
             "restart": True
         }
 
+# 🔹 Langue globale du chatbot (stockée en base)
+def get_chatbot_language():
+    return Setting.get_value("CHATBOT_LANGUAGE", "fr")
+
 # 🔹 Route : Catégories principales
 @api_bp.route('/api/categories')
 def get_main_categories():
-    lang = get_lang()
-    categories = Category.query.filter_by(parent_id=None).all()
+    lang = get_chatbot_language()
+    categories = Category.query.filter_by(parent_id=None, visible=True).all()
 
     cat_list = [
         {
@@ -77,8 +77,8 @@ def get_main_categories():
 # 🔹 Route : Sous-catégories
 @api_bp.route('/api/categories/<int:category_id>/subcategories')
 def get_subcategories(category_id):
-    lang = get_lang()
-    subcats = Category.query.filter_by(parent_id=category_id).all()
+    lang = get_chatbot_language()
+    subcats = Category.query.filter_by(parent_id=category_id, visible=True).all()
 
     sub_list = [
         {
@@ -99,7 +99,16 @@ def get_subcategories(category_id):
 # 🔹 Route : Réponses
 @api_bp.route('/api/categories/<int:category_id>/responses')
 def get_responses(category_id):
-    lang = get_lang()
+    lang = get_chatbot_language()
+
+    category = Category.query.get_or_404(category_id)
+    if not category.visible:
+        return jsonify({
+            "messages": get_messages(lang),
+            "navigation_options": get_navigation("responses"),
+            "responses": []
+        })
+
     responses = Response.query.filter_by(category_id=category_id).all()
 
     resp_list = [

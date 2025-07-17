@@ -148,54 +148,69 @@
 
 
     <div class="table-responsive">
-        <table class="table table-bordered table-striped align-middle" id="categoryTable">
-            <thead class="table-light">
-                <tr>
-                    <th>{{ t("Nom") }}</th>
-                    <th class="text-center">{{ t("Nombre de réponses") }}</th>
-                    <th class="text-center">{{ t("Actions") }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for node in flat_tree %}
-                <tr class="category-row {% if node.level > 0 %}hidden-row parent-{{ node.parent_id }}{% endif %}" data-id="{{ node.id }}" data-parent="{{ node.parent_id }}" data-level="{{ node.level }}">
-                    <td>
-                        <span style="padding-left: {{ node.level * 20 }}px;">
+    <table class="table table-bordered table-striped align-middle" id="categoryTable">
+        <thead class="table-light">
+            <tr>
+                <th>{{ t("Nom") }}</th>
+                <th class="text-center">{{ t("Nombre de réponses") }}</th>
+                <th class="text-center">{{ t("Actions") }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for node in flat_tree %}
+            <tr class="category-row {% if node.level > 0 %}hidden-row parent-{{ node.parent_id }}{% endif %}" data-id="{{ node.id }}" data-parent="{{ node.parent_id }}" data-level="{{ node.level }}">
+                <td>
+                    <div class="d-flex align-items-center justify-content-between" style="padding-left: {{ node.level * 20 }}px;">
+                        <div class="d-flex align-items-center gap-2">
                             {% if node.has_children %}
-<i class="fas {% if get_locale() == 'ar' %}fa-caret-left{% else %}fa-caret-right{% endif %} toggle-icon" onclick="toggleChildren({{ node.id }}, this)"></i>
+                                <i class="fas {% if get_locale() == 'ar' %}fa-caret-left{% else %}fa-caret-right{% endif %} toggle-icon"
+                                   onclick="toggleChildren({{ node.id }}, this)"></i>
                             {% else %}
                                 <i class="fas fa-circle" style="opacity: 0.3;"></i>
                             {% endif %}
-                            {{ node.translated_name }}
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        {% if node.response_count > 0 %}
-                            <span class="badge bg-primary">{{ node.response_count }}</span>
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <div class="d-grid gap-2 d-md-flex justify-content-center">
-                            <a href="{{ url_for('edit_category', id=node.id) }}" class="btn btn-sm btn-soft">{{ t("Modifier") }}</a>
-                            <form action="{{ url_for('delete_category', id=node.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-sm btn-soft" onclick="return confirm('{{ t('Supprimer cette catégorie ?') }}');">{{ t("Supprimer") }}</button>
-                            </form>
-                            <a href="{{ url_for('add_category') }}?parent_id={{ node.id }}" class="btn btn-sm btn-soft">{{ t("Sous-catégorie") }}</a>
-                           {% if not node.has_children %}
-    <a href="{{ url_for('responses_by_category', category_id=node.id) }}" class="btn btn-sm btn-soft">{{ t("Réponses") }}</a>
-{% else %}
-    <span class="btn btn-sm btn-soft invisible">Réponses</span>
-{% endif %}
-
+                            <span>{{ node.translated_name }}</span>
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+                    </div>
+                </td>
+                <td class="text-center">
+                    {% if node.response_count > 0 %}
+                        <span class="badge bg-primary">{{ node.response_count }}</span>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-center">
+    <div class="d-grid gap-2 d-md-flex justify-content-center">
+
+        <!-- ✅ Toggle switch visible déplacé ici -->
+        <div class="form-check form-switch mt-1 me-2">
+            <input class="form-check-input toggle-switch" type="checkbox"
+                   data-id="{{ node.id }}" {% if node.visible %}checked{% endif %}>
+        </div>
+
+        <a href="{{ url_for('edit_category', id=node.id) }}" class="btn btn-sm btn-soft">{{ t("Modifier") }}</a>
+
+        <form action="{{ url_for('delete_category', id=node.id) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-soft" onclick="return confirm('{{ t('Supprimer cette catégorie ?') }}');">{{ t("Supprimer") }}</button>
+        </form>
+
+        <a href="{{ url_for('add_category') }}?parent_id={{ node.id }}" class="btn btn-sm btn-soft">{{ t("Sous-catégorie") }}</a>
+
+        {% if not node.has_children %}
+            <a href="{{ url_for('responses_by_category', category_id=node.id) }}" class="btn btn-sm btn-soft">{{ t("Réponses") }}</a>
+        {% else %}
+            <span class="btn btn-sm btn-soft invisible">Réponses</span>
+        {% endif %}
     </div>
+</td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -223,6 +238,31 @@
         });
     });
 
+    document.querySelectorAll('.toggle-switch').forEach(switchEl => {
+    switchEl.addEventListener('change', function () {
+        const categoryId = this.dataset.id;
+        const visible = this.checked;
+
+        fetch(`/toggle_category_visibility/${categoryId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `visible=${visible}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Erreur lors du changement de visibilité.');
+            } else {
+                location.reload(); // Pour rafraîchir l'état
+            }
+        });
+    });
+});
+
+
+
     setTimeout(() => {
         document.querySelectorAll('.flash-message').forEach(el => {
             el.style.opacity = '0';
@@ -230,6 +270,7 @@
         });
     }, 3000);
 </script>
+
 
 </body>
 </html>

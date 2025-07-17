@@ -206,10 +206,12 @@
 
   "Rechercher un admin": "بحث حسب المسؤول",
   "Rechercher une cible": "بحث حسب الهدف",
-    "source_field_edit_hint": "عدّل هذا الحقل لتحديث الترجمات تلقائيًا."
-
-
-
-
-
+  "source_field_edit_hint": "عدّل هذا الحقل لتحديث الترجمات تلقائيًا.",
+  "إظهار هذا التصنيف": "إظهار هذا التصنيف",
+  "Langue source": "اللغة المصدر",
+  "Afficher cette catégorie": "إظهار هذا التصنيف",
+  "afficher": "إظهار",
+  "masquer": "إخفاء",
+  "chatbot_lang_updated": "تم تحديث لغة البوت.",
+  "chatbot_lang_invalid": "اللغة غير صالحة."
 }

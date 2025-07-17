@@ -209,11 +209,11 @@
   "Rechercher un admin": "Rechercher un administrateur",
   "Rechercher une cible": "Rechercher une cible",
   "source_field_edit_hint": "Modifie ce champ pour mettre à jour automatiquement les traductions.",
-  "Langue source": "Langue source"
-
-
-
-
-
+  "Langue source": "Langue source",
+  "Afficher cette catégorie": "Afficher cette catégorie",
+  "masquer": "Masquer",
+  "afficher": "Afficher",
+  "chatbot_lang_updated": "Langue du chatbot mise à jour.",
+  "chatbot_lang_invalid": "Langue invalide."
 
 }

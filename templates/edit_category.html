@@ -131,15 +131,13 @@
 <form method="POST" class="bg-white p-4 rounded shadow-sm w-100" style="max-width: 600px;">
 
     <!-- Champ source (modifiable) -->
-<div class="mb-3">
-    <label class="form-label">
-    {{ t(label_key) }} ({{ t("Langue source") }})
-</label>
-
-    <input type="text" name="{{ source_field }}" class="form-control" value="{{ source_value }}">
-    <small class="form-text text-muted">{{ t("source_field_edit_hint") }}</small>
-</div>
-
+    <div class="mb-3">
+        <label class="form-label">
+            {{ t(label_key) }} ({{ t("Langue source") }})
+        </label>
+        <input type="text" name="{{ source_field }}" class="form-control" value="{{ source_value }}">
+        <small class="form-text text-muted">{{ t("source_field_edit_hint") }}</small>
+    </div>
 
     <!-- Langue FR -->
     {% if category.source_lang != 'fr' %}
@@ -186,12 +184,20 @@
         </select>
     </div>
 
+    <!-- ✅ Case à cocher visible -->
+    <div class="form-check form-switch mb-4">
+        <input class="form-check-input" type="checkbox" id="visible" name="visible"
+               {% if category.visible %}checked{% endif %}>
+        <label class="form-check-label" for="visible">{{ t("Afficher cette catégorie") }}</label>
+    </div>
+
     <!-- Boutons -->
     <div class="d-flex gap-2">
         <button type="submit" class="btn btn-soft">{{ t("save_changes") }}</button>
         <a href="{{ url_for('manage_categories') }}" class="btn btn-soft">{{ t("cancel") }}</a>
     </div>
 </form>
+
 
 
 </div>
