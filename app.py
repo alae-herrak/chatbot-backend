@@ -12,8 +12,10 @@ import json
 from flask import jsonify
 from datetime import datetime
 from models import db, Log
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = 'supersecretkey'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
 app.config['UPLOAD_FOLDER'] = 'uploads'
