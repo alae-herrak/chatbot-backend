@@ -12,12 +12,34 @@ import json
 from flask import jsonify
 from datetime import datetime
 from models import db, Log
+
 from flask_cors import CORS
 from models import Setting
+
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+
+class PrefixMiddleware:
+    def __init__(self, app, prefix):
+        self.app = app
+        self.prefix = prefix
+
+    def __call__(self, environ, start_response):
+        if environ['PATH_INFO'].startswith(self.prefix):
+            environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
+            environ['SCRIPT_NAME'] = self.prefix
+            return self.app(environ, start_response)
+        return self.not_found(environ, start_response)
+
+    def not_found(self, environ, start_response):
+        start_response('404 Not Found', [('Content-Type', 'text/plain')])
+        return [b'This URL does not belong to the app.']
 
 
 
 app = Flask(__name__)
+
+app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/chatbot')
+
 CORS(app)
 app.secret_key = 'supersecretkey'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
@@ -686,6 +708,11 @@ app.register_blueprint(api_bp)
 
 from text_api import text_api_bp
 app.register_blueprint(text_api_bp)
+
+from preload_utils import preload_all_languages
+
+with app.app_context():
+    preload_all_languages()
 
 @app.route('/settings', methods=['POST'])
 def update_settings():
