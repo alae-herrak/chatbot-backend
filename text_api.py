@@ -139,6 +139,7 @@ def ask_question(question_text):
     stop_words = get_stopwords_for_lang(lang)
     question_clean = clean_text(question, lang)
 
+    # === Étape 1 : intentions ===
     from torch import no_grad
     with no_grad():
         q_embed = model_intent.encode(question, convert_to_tensor=True)
@@ -164,9 +165,37 @@ def ask_question(question_text):
                 "file_url": None
             })
 
+    # === Préchargement des données si nécessaires ===
     if lang not in cache["tfidf_matrix"]:
         preload_language_data(lang)
 
+    # === Étape 2 : noms des catégories ===
+    categories = cache["categories"].get(lang, [])
+    if categories:
+        cat_vectorizer = cache["cat_vectorizer"][lang]
+        cat_matrix = cache["cat_matrix"][lang]
+        q_vector = cat_vectorizer.transform([question_clean])
+        similarities = cosine_similarity(q_vector, cat_matrix).flatten()
+        best_index = similarities.argmax()
+        best_score = similarities[best_index]
+
+        if best_score >= 0.3:
+            best_cat = categories[best_index]
+            fallback_responses = Response.query.options(joinedload(Response.category)).filter(
+                Response.category_id == best_cat.id,
+                Response.type != 'text'
+            ).all()
+            if fallback_responses:
+                r = fallback_responses[0]
+                return jsonify({
+                    "response": getattr(r, answer_field) or "",
+                    "type": r.type,
+                    "category": best_cat.get_translated_name(lang),
+                    "response_id": r.id,
+                    "file_url": r.file_url
+                })
+
+    # === Étape 3 : réponses `text` ===
     responses = cache["text_responses"].get(lang, [])
     if responses:
         vectorizer = cache["vectorizer"][lang]
@@ -198,31 +227,7 @@ def ask_question(question_text):
                 "file_url": r.file_url
             })
 
-    categories = cache["categories"].get(lang, [])
-    if categories:
-        cat_vectorizer = cache["cat_vectorizer"][lang]
-        cat_matrix = cache["cat_matrix"][lang]
-        q_vector = cat_vectorizer.transform([question_clean])
-        similarities = cosine_similarity(q_vector, cat_matrix).flatten()
-        best_index = similarities.argmax()
-        best_score = similarities[best_index]
-
-        if best_score >= 0.3:
-            best_cat = categories[best_index]
-            fallback_responses = Response.query.options(joinedload(Response.category)).filter(
-                Response.category_id == best_cat.id,
-                Response.type != 'text'
-            ).all()
-            if fallback_responses:
-                r = fallback_responses[0]
-                return jsonify({
-                    "response": getattr(r, answer_field) or "",
-                    "type": r.type,
-                    "category": best_cat.get_translated_name(lang),
-                    "response_id": r.id,
-                    "file_url": r.file_url
-                })
-
+    # === Étape 4 : aucun résultat ===
     default_message = {
         "fr": "Désolé, je n’ai pas trouvé de réponse à votre question.",
         "en": "Sorry, I couldn't find an answer to your question.",
