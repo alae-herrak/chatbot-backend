@@ -121,9 +121,12 @@ def preload_language_data(lang):
         cache["cat_names_clean"][lang] = cat_names_clean
 
 @text_api_bp.route("/api/ask", methods=["POST"])
-def ask_question():
+def ask_question_route():
     data = request.get_json()
-    question = data.get("question", "").strip()
+    return ask_question(data.get("question", "").strip())
+
+def ask_question(question_text):
+    question = question_text.strip()
     if not question:
         return jsonify({"error": "Aucune question fournie"}), 400
 
