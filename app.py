@@ -38,12 +38,9 @@ class PrefixMiddleware:
 
 
 app = Flask(__name__)
-<<<<<<< HEAD
-=======
 
 app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/chatbot')
 
->>>>>>> e132acccd2474cc9fcdf7001d2f4c4bfaecc1359
 CORS(app)
 app.secret_key = 'supersecretkey'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
