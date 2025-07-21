@@ -204,7 +204,11 @@
   "Rechercher une cible": "Search by target",
   "source_field_edit_hint": "Edit this field to automatically update the translations.",
   "Langue source": "Source language",
-  "Langue source": "اللغة المصدر"
+  "Afficher cette catégorie": "Show this category",
+  "afficher": "show",
+  "masquer": "hide",
+  "chatbot_lang_updated": "Chatbot language updated.",
+  "chatbot_lang_invalid": "Invalid language."
 
 
 

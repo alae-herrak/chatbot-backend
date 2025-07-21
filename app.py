@@ -14,7 +14,36 @@ from datetime import datetime
 from models import db, Log
 from flask_cors import CORS
 
+from flask_cors import CORS
+from models import Setting
+
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+
+class PrefixMiddleware:
+    def __init__(self, app, prefix):
+        self.app = app
+        self.prefix = prefix
+
+    def __call__(self, environ, start_response):
+        if environ['PATH_INFO'].startswith(self.prefix):
+            environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
+            environ['SCRIPT_NAME'] = self.prefix
+            return self.app(environ, start_response)
+        return self.not_found(environ, start_response)
+
+    def not_found(self, environ, start_response):
+        start_response('404 Not Found', [('Content-Type', 'text/plain')])
+        return [b'This URL does not belong to the app.']
+
+
+
 app = Flask(__name__)
+<<<<<<< HEAD
+=======
+
+app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/chatbot')
+
+>>>>>>> e132acccd2474cc9fcdf7001d2f4c4bfaecc1359
 CORS(app)
 app.secret_key = 'supersecretkey'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
@@ -120,6 +149,7 @@ def dashboard():
     logs = []
     if role == 'superadmin':
         logs = Log.query.order_by(Log.timestamp.desc()).limit(5).all()
+    current_lang = Setting.get_value('CHATBOT_LANGUAGE', 'fr')
 
     return render_template(
         'dashboard.html',
@@ -130,7 +160,8 @@ def dashboard():
         total_responses=total_responses,
         type_counts=type_counts,
         lang_counts=lang_counts,
-        logs=logs
+        logs=logs,
+        current_lang=current_lang
     )
 
 @app.route('/logout')
@@ -247,11 +278,12 @@ def build_category_tree(categories, parent_id=None, level=0):
 
             tree.append({
                 'id': cat.id,
-                'parent_id': cat.parent_id,  # ✅ AJOUT OBLIGATOIRE
+                'parent_id': cat.parent_id,
                 'translated_name': name,
                 'level': level,
                 'response_count': len(cat.responses),
                 'has_children': len(children) > 0,
+                'visible': cat.visible,  # ✅ la clé manquante !
                 'children': children
             })
 
@@ -281,6 +313,22 @@ def manage_categories():
     flat_tree = flatten_tree(category_tree)
     return render_template('manage_categories.html', flat_tree=flat_tree , role=role)
 
+@app.route('/toggle_category_visibility/<int:id>', methods=['POST'])
+def toggle_category_visibility(id):
+    if 'username' not in session:
+        return jsonify({"success": False, "error": "unauthorized"}), 401
+
+    category = Category.query.get_or_404(id)
+
+    # ✅ Lire la valeur envoyée par le formulaire
+    visible_value = request.form.get('visible')
+    if visible_value is None:
+        return jsonify({"success": False, "error": "missing visible"}), 400
+
+    category.visible = visible_value == 'true'
+    db.session.commit()
+
+    return jsonify({"success": True, "visible": category.visible})
 
 @app.route('/edit_category/<int:id>', methods=['GET', 'POST'])
 def edit_category(id):
@@ -322,6 +370,9 @@ def edit_category(id):
         parent_id = request.form.get('parent_id') or None
         category.parent_id = int(parent_id) if parent_id else None
 
+        # ✅ Met à jour le champ `visible` selon la case cochée
+        category.visible = request.form.get('visible') == 'on'
+
         db.session.commit()
         log_action("log_edit_category", "category", category.id)
         flash("category_updated_success", "success")
@@ -338,7 +389,6 @@ def edit_category(id):
                            source_value=source_value,
                            label_key=label_key,
                            role=session.get('role'))
-
 
 @app.route('/delete_category/<int:id>', methods=['POST'])
 def delete_category(id):
@@ -403,12 +453,16 @@ def add_category():
         if parent_id == '':
             parent_id = None
 
+        # ✅ Nouveau champ : afficher/masquer
+        visible = request.form.get('visible') == 'on'
+
         new_cat = Category(
             name_fr=name_fr,
             name_en=name_en,
             name_ar=name_ar,
             parent_id=parent_id,
-            source_lang=detected_lang  # ✅ ENREGISTRER LA LANGUE SOURCE
+            source_lang=detected_lang,
+            visible=visible
         )
         db.session.add(new_cat)
         db.session.commit()
@@ -424,6 +478,7 @@ def add_category():
     category_tree = build_category_tree(all_categories)
 
     return render_template('add_category.html', tree=category_tree, selected_parent=selected_parent, role=role)
+
 
 @app.route('/categories/<int:category_id>/responses/add', methods=['GET', 'POST'])
 def add_response_for_category(category_id):
@@ -505,6 +560,7 @@ def add_response_for_category(category_id):
         return redirect(url_for('responses_by_category', category_id=category.id))
 
     return render_template('add_response_for_category.html', category=category, role=session.get('role'))
+
 @app.route('/responses/edit/<int:response_id>', methods=['GET', 'POST'])
 def edit_response(response_id):
     if 'username' not in session:
@@ -656,6 +712,29 @@ app.register_blueprint(api_bp)
 
 from text_api import text_api_bp
 app.register_blueprint(text_api_bp)
+
+from preload_utils import preload_all_languages
+
+with app.app_context():
+    preload_all_languages()
+
+@app.route('/settings', methods=['POST'])
+def update_settings():
+    if 'role' not in session or session['role'] != 'superadmin':
+        return redirect(url_for('dashboard'))
+
+    selected_lang = request.form.get('chatbot_lang')
+    if selected_lang in ['fr', 'en', 'ar']:
+        Setting.set_value('CHATBOT_LANGUAGE', selected_lang)
+        flash("chatbot_lang_updated", "success")
+    else:
+        flash("chatbot_lang_invalid", "danger")
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/test/lang')
+def test_lang():
+    return f"Langue du chatbot: {Setting.get_value('CHATBOT_LANGUAGE', 'fr')}"
 
 
 

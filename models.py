@@ -12,6 +12,7 @@ class Category(db.Model):
     name_ar = db.Column(db.String(255))
     parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
     source_lang = db.Column(db.String(10), default='fr')
+    visible = db.Column(db.Boolean, default=True)
 
     # Catégorie parente
     parent = db.relationship('Category', remote_side=[id], backref='subcategories')
@@ -59,3 +60,25 @@ class Log(db.Model):
 
     # ✅ Relation avec Admin
     admin = db.relationship('Admin', backref='logs')
+
+
+class Setting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(db.String(100), nullable=False)
+
+    @staticmethod
+    def get_value(key, default=None):
+        setting = Setting.query.filter_by(key=key).first()
+        return setting.value if setting else default
+
+    @staticmethod
+    def set_value(key, value):
+        setting = Setting.query.filter_by(key=key).first()
+        if setting:
+            setting.value = value
+        else:
+            setting = Setting(key=key, value=value)
+            db.session.add(setting)
+        db.session.commit()
+

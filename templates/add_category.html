@@ -133,39 +133,46 @@
     {% endwith %}
 
     <form method="POST" class="bg-white p-4 rounded shadow-sm w-100" style="max-width: 600px;">
-        <!-- Nom -->
-        <div class="mb-3">
-            <label class="form-label">{{ t("category_name_any") }}</label>
-            <input type="text" name="name" class="form-control" required>
-            <small class="form-text text-muted">{{ t("language_will_be_detected_and_translated") }}</small>
-        </div>
+    <!-- Nom -->
+    <div class="mb-3">
+        <label class="form-label">{{ t("category_name_any") }}</label>
+        <input type="text" name="name" class="form-control" required>
+        <small class="form-text text-muted">{{ t("language_will_be_detected_and_translated") }}</small>
+    </div>
 
-        <!-- Parent -->
-        <div class="mb-4">
-            <label class="form-label">{{ t("parent_category") }}</label>
-            <select name="parent_id" class="form-select">
-                <option value="">{{ t("no_parent_option") }}</option>
-                {% if selected_parent %}
-                    <option value="{{ selected_parent.id }}" selected>{{ selected_parent.translated_name }}</option>
-                {% else %}
-                    {% macro render_options(nodes) %}
-                        {% for node in nodes %}
-                            <option value="{{ node.id }}">{{ "-" * node.level }} {{ node.translated_name }}</option>
-                            {% if node.children %}
-                                {{ render_options(node.children) }}
-                            {% endif %}
-                        {% endfor %}
-                    {% endmacro %}
-                    {{ render_options(tree) }}
-                {% endif %}
-            </select>
-        </div>
+    <!-- Parent -->
+    <div class="mb-4">
+        <label class="form-label">{{ t("parent_category") }}</label>
+        <select name="parent_id" class="form-select">
+            <option value="">{{ t("no_parent_option") }}</option>
+            {% if selected_parent %}
+                <option value="{{ selected_parent.id }}" selected>{{ selected_parent.translated_name }}</option>
+            {% else %}
+                {% macro render_options(nodes) %}
+                    {% for node in nodes %}
+                        <option value="{{ node.id }}">{{ "-" * node.level }} {{ node.translated_name }}</option>
+                        {% if node.children %}
+                            {{ render_options(node.children) }}
+                        {% endif %}
+                    {% endfor %}
+                {% endmacro %}
+                {{ render_options(tree) }}
+            {% endif %}
+        </select>
+    </div>
 
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-soft">{{ t("create") }}</button>
-            <a href="{{ url_for('manage_categories') }}" class="btn btn-soft">{{ t("cancel") }}</a>
-        </div>
-    </form>
+    <!-- ✅ Case à cocher visible -->
+    <div class="form-check form-switch mb-4">
+        <input class="form-check-input" type="checkbox" id="visible" name="visible" checked>
+        <label class="form-check-label" for="visible">{{ t("Afficher cette catégorie") }}</label>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-soft">{{ t("create") }}</button>
+        <a href="{{ url_for('manage_categories') }}" class="btn btn-soft">{{ t("cancel") }}</a>
+    </div>
+</form>
+
 </div>
 
 <script>
