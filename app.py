@@ -38,6 +38,7 @@ class PrefixMiddleware:
 
 
 app = Flask(__name__)
+app.secret_key = 'ma_clé_secrète_temporaire'
 
 app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/chatbot')
 

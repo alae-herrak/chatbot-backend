@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from langdetect import detect
 from models import db, Category, Response, Setting
+from flask import session
 
 api_bp = Blueprint('api', __name__)
 
@@ -27,6 +28,12 @@ def guess_lang_fallback(text):
     return None
 
 # 🔹 Route : Démarrage après message utilisateur
+from flask import Blueprint, jsonify, request, session
+from models import Category
+from langdetect import detect
+
+api_bp = Blueprint('api', __name__)
+
 @api_bp.route('/api/start', methods=['POST'])
 def chatbot_start():
     data = request.get_json()
@@ -41,13 +48,19 @@ def chatbot_start():
     if lang is None:
         lang = get_chatbot_language()
 
-    # Vérifie si c'est une salutation simple
+    # Vérifie si la session a déjà commencé
+    has_started = session.get("chat_started", False)
+
     greetings = {
-        'fr': ["bonjour", "salut",  "svp", "aide"],
-        'en': ["hello", "hi", "please",  "thanks"],
-        'ar': ["مرحبا", "أهلا", "السلام", "مساعدة"]
+        'fr': ["bonjour", "salut", "svp", "aide"],
+        'en': ["hello", "hi", "please", "help"],
+        'ar': ["مرحبا", "أهلا", "مساعدة", "سلام"]
     }
-    if any(word in user_message.lower() for word in greetings.get(lang, [])):
+
+    is_greeting = any(word in user_message.lower() for word in greetings.get(lang, []))
+
+    if not has_started and is_greeting:
+        session["chat_started"] = True
         categories = Category.query.filter_by(parent_id=None, visible=True).all()
         cat_list = [
             {
@@ -66,12 +79,9 @@ def chatbot_start():
             "clarification_required": False
         })
 
-    # Sinon, on redirige proprement vers ask_question
-    from flask import current_app
+    # 👉 Redirection logique (sans injection sale dans request)
     from text_api import ask_question
-
-    with current_app.test_request_context('/chatbot/api/ask', method='POST', json={"question": user_message}):
-        return ask_question()
+    return ask_question(user_message)
 
 # 🔸 Messages multilingues
 def get_messages(lang):
