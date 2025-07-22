@@ -120,11 +120,10 @@ def ask_question(question_text):
     answer_field = get_answer_field(lang)
     question_clean = clean_text(question, lang)
 
-    # 🔁 Bloc détection traduction via embeddings
     from torch import no_grad
     import re
 
-    # 🔁 Bloc : détection traduction via embeddings + expressions courtes
+    # 🔁 Bloc traduction (si demande explicite)
     if "last_answer" in session:
         q_embed = model_intent.encode(question, convert_to_tensor=True)
         scores = util.cos_sim(q_embed, intent_embeddings)[0]
@@ -169,6 +168,7 @@ def ask_question(question_text):
                 ]
             })
 
+    # 🔁 Intentions
     with no_grad():
         q_embed = model_intent.encode(question, convert_to_tensor=True)
         scores = util.cos_sim(q_embed, intent_embeddings)[0]
@@ -197,6 +197,7 @@ def ask_question(question_text):
                 ]
             })
 
+    # 🔁 Catégorie reconnue (fallback non text)
     if lang not in cache["texts_embeddings"]:
         preload_language_data(lang)
 
@@ -237,6 +238,21 @@ def ask_question(question_text):
                     ]
                 })
 
+            # 🔁 Suggérer les sous-catégories visibles si aucun fallback
+            subcats = Category.query.filter_by(parent_id=best_cat.id, visible=True).all()
+            if subcats:
+                return jsonify({
+                    "clarification_required": True,
+                    "clarification_options": [
+                        { "category_id": c.id, "label": c.get_translated_name(lang) } for c in subcats
+                    ],
+                    "suggestions": [
+                        { "label": "🔙 Revenir au menu", "action": "restart" },
+                        { "label": "✅ Terminer", "action": "end" }
+                    ]
+                })
+
+    # 🔁 Réponses textuelles
     responses = cache["text_responses"].get(lang, [])
     if responses:
         texts_embeddings = cache["texts_embeddings"][lang]
@@ -284,6 +300,7 @@ def ask_question(question_text):
                 ]
             })
 
+    # 🔁 Aucun résultat
     default_message = {
         "fr": "Désolé, je n’ai pas trouvé de réponse à votre question.",
         "en": "Sorry, I couldn't find an answer to your question.",
