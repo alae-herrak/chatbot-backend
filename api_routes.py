@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from langdetect import detect
 from models import db, Category, Response, Setting
-from flask import session
+from text_api import ask_question, model_intent, intent_embeddings, intent_tags  # ← ajout intelligent
+from sentence_transformers import util
 
 api_bp = Blueprint('api', __name__)
 
@@ -28,12 +29,6 @@ def guess_lang_fallback(text):
     return None
 
 # 🔹 Route : Démarrage après message utilisateur
-from flask import Blueprint, jsonify, request, session
-from models import Category
-from langdetect import detect
-
-api_bp = Blueprint('api', __name__)
-
 @api_bp.route('/api/start', methods=['POST'])
 def chatbot_start():
     data = request.get_json()
@@ -48,39 +43,39 @@ def chatbot_start():
     if lang is None:
         lang = get_chatbot_language()
 
-    # Vérifie si la session a déjà commencé
     has_started = session.get("chat_started", False)
 
-    greetings = {
-        'fr': ["bonjour", "salut", "svp", "aide"],
-        'en': ["hello", "hi", "please", "help"],
-        'ar': ["مرحبا", "أهلا", "مساعدة", "سلام"]
-    }
+    # ✅ Remplacement par détection d’intention intelligente
+    if not has_started:
+        from torch import no_grad
+        with no_grad():
+            q_embed = model_intent.encode(user_message, convert_to_tensor=True)
+            scores = util.cos_sim(q_embed, intent_embeddings)[0]
+            best_score = float(scores.max())
+            best_idx = int(scores.argmax())
+            best_tag = intent_tags[best_idx]
 
-    is_greeting = any(word in user_message.lower() for word in greetings.get(lang, []))
+            if best_score > 0.6 and best_tag == "greeting":
+                session["chat_started"] = True
+                categories = Category.query.filter_by(parent_id=None, visible=True).all()
+                cat_list = [
+                    {
+                        "id": cat.id,
+                        "label": cat.get_translated_name(lang),
+                        "has_children": len([c for c in cat.subcategories if c.visible]) > 0,
+                        "response_count": len([r for r in cat.responses if r.visible])
+                    }
+                    for cat in categories
+                ]
+                return jsonify({
+                    "message": get_messages(lang)["select_prompt"],
+                    "lang": lang,
+                    "categories": cat_list,
+                    "navigation_options": get_navigation("categories"),
+                    "clarification_required": False
+                })
 
-    if not has_started and is_greeting:
-        session["chat_started"] = True
-        categories = Category.query.filter_by(parent_id=None, visible=True).all()
-        cat_list = [
-            {
-                "id": cat.id,
-                "label": cat.get_translated_name(lang),
-                "has_children": len([c for c in cat.subcategories if c.visible]) > 0,
-                "response_count": len([r for r in cat.responses if r.visible])
-            }
-            for cat in categories
-        ]
-        return jsonify({
-            "message": get_messages(lang)["select_prompt"],
-            "lang": lang,
-            "categories": cat_list,
-            "navigation_options": get_navigation("categories"),
-            "clarification_required": False
-        })
-
-    # 👉 Redirection logique (sans injection sale dans request)
-    from text_api import ask_question
+    # 🔁 Sinon : redirection vers la recherche textuelle
     return ask_question(user_message)
 
 # 🔸 Messages multilingues
