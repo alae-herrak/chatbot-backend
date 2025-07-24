@@ -6,3 +6,6 @@ scikit-learn
 langdetect
 sentence-transformers==5.0.0
 argostranslate
+Flask-Cors
+requests
+argon2-cffi
