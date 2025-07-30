@@ -318,10 +318,9 @@ def toggle_category_visibility(id):
 
     category = Category.query.get_or_404(id)
 
-    # ✅ Lire la valeur envoyée par le formulaire
-    visible_value = request.form.get('visible')
-    if visible_value is None:
-        return jsonify({"success": False, "error": "missing visible"}), 400
+    visible_value = request.form.get('visible', '').lower()
+    if visible_value not in ['true', 'false']:
+        return jsonify({"success": False, "error": "invalid visible"}), 400
 
     category.visible = visible_value == 'true'
     db.session.commit()

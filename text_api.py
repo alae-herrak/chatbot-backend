@@ -1,7 +1,5 @@
 from flask import Blueprint, request, jsonify
 from langdetect import detect
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 import re
 import nltk
 import unicodedata
@@ -11,6 +9,7 @@ import random
 from models import db, Category, Response
 from sentence_transformers import SentenceTransformer, util
 from sqlalchemy.orm import joinedload
+from flask import session
 
 # === Chargement du modèle SentenceTransformer ===
 model_intent = SentenceTransformer("models/all-MiniLM-L12-v2")
@@ -41,17 +40,13 @@ intent_embeddings = model_intent.encode(intent_phrases, convert_to_tensor=True)
 
 text_api_bp = Blueprint('text_api_bp', __name__)
 
-from nltk.corpus import stopwords
-
 cache = {
     "text_responses": {},
-    "tfidf_matrix": {},
-    "vectorizer": {},
     "texts_clean": {},
+    "texts_embeddings": {},
     "categories": {},
-    "cat_matrix": {},
-    "cat_vectorizer": {},
-    "cat_names_clean": {}
+    "cat_names_clean": {},
+    "cat_embeddings": {}
 }
 
 def normalize_common(text):
@@ -84,41 +79,28 @@ def clean_text(text, lang='fr'):
         return clean_en(text)
     return clean_fr(text)
 
-def get_stopwords_for_lang(lang_code):
-    lang_map = {'fr': 'french', 'en': 'english', 'ar': 'arabic'}
-    try:
-        return stopwords.words(lang_map.get(lang_code, 'english'))
-    except:
-        return []
-
 def get_answer_field(lang_code):
     return {'fr': 'answer_fr', 'en': 'answer_en', 'ar': 'answer_ar'}.get(lang_code, 'answer_en')
 
 def preload_language_data(lang):
     answer_field = get_answer_field(lang)
-    stop_words = get_stopwords_for_lang(lang)
-
     responses = Response.query.options(joinedload(Response.category)).join(Response.category).filter(Category.visible == True, Response.type == 'text').all()
     texts_clean = [clean_text(getattr(r, answer_field) or "", lang) for r in responses]
 
     if texts_clean:
-        vectorizer = TfidfVectorizer(stop_words=stop_words)
-        tfidf_matrix = vectorizer.fit_transform(texts_clean)
+        texts_embeddings = model_intent.encode(texts_clean, convert_to_tensor=True)
         cache["text_responses"][lang] = responses
-        cache["tfidf_matrix"][lang] = tfidf_matrix
-        cache["vectorizer"][lang] = vectorizer
         cache["texts_clean"][lang] = texts_clean
+        cache["texts_embeddings"][lang] = texts_embeddings
 
     categories = Category.query.filter_by(visible=True).all()
     cat_names_clean = [clean_text(c.get_translated_name(lang) or "", lang) for c in categories]
 
     if cat_names_clean:
-        cat_vectorizer = TfidfVectorizer(stop_words=stop_words)
-        cat_matrix = cat_vectorizer.fit_transform(cat_names_clean)
+        cat_embeddings = model_intent.encode(cat_names_clean, convert_to_tensor=True)
         cache["categories"][lang] = categories
-        cache["cat_matrix"][lang] = cat_matrix
-        cache["cat_vectorizer"][lang] = cat_vectorizer
         cache["cat_names_clean"][lang] = cat_names_clean
+        cache["cat_embeddings"][lang] = cat_embeddings
 
 @text_api_bp.route("/api/ask", methods=["POST"])
 def ask_question_route():
@@ -136,11 +118,57 @@ def ask_question(question_text):
         lang = 'en'
 
     answer_field = get_answer_field(lang)
-    stop_words = get_stopwords_for_lang(lang)
     question_clean = clean_text(question, lang)
 
-    # === Étape 1 : intentions ===
     from torch import no_grad
+    import re
+
+    # 🔁 Bloc traduction (si demande explicite)
+    if "last_answer" in session:
+        q_embed = model_intent.encode(question, convert_to_tensor=True)
+        scores = util.cos_sim(q_embed, intent_embeddings)[0]
+        best_score = float(scores.max())
+        best_idx = int(scores.argmax())
+        best_tag = intent_tags[best_idx]
+
+        expressions = {
+            "ar": [r"\barabe\b", r"\barabic\b", r"\ben arabe\b", r"\btraduire en arabe\b", r"\bar\b"],
+            "fr": [r"\bfrançais\b", r"\bfrench\b", r"\ben français\b", r"\btraduire en français\b", r"\bfr\b"],
+            "en": [r"\benglish\b", r"\banglais\b", r"\ben anglais\b", r"\btraduire en anglais\b", r"\ben\b"]
+        }
+
+        matched_target = None
+        for lang_code, patterns in expressions.items():
+            for pattern in patterns:
+                if re.search(pattern, question.lower()):
+                    matched_target = lang_code
+                    break
+            if matched_target:
+                break
+
+        if best_score > 0.6 and best_tag.startswith("translate_"):
+            target = best_tag.split("_")[1]
+        elif matched_target:
+            target = matched_target
+        else:
+            target = None
+
+        if target:
+            last = session["last_answer"]
+            translated = last.get(f"answer_{target}") or ""
+            return jsonify({
+                "response": translated,
+                "type": last.get("type"),
+                "category": last.get("category"),
+                "response_id": last.get("response_id"),
+                "file_url": last.get("file_url"),
+                "suggestions": [
+                    { "label": "🔙 Revenir au menu", "action": "restart" },
+                    { "label": "✅ Terminer", "action": "end" }
+                ]
+            })
+
+    # 🔁 Intentions
     with no_grad():
         q_embed = model_intent.encode(question, convert_to_tensor=True)
         scores = util.cos_sim(q_embed, intent_embeddings)[0]
@@ -162,22 +190,24 @@ def ask_question(question_text):
                 "type": "intent",
                 "category": None,
                 "response_id": None,
-                "file_url": None
+                "file_url": None,
+                "suggestions": [
+                    { "label": "🔙 Revenir au menu", "action": "restart" },
+                    { "label": "✅ Terminer", "action": "end" }
+                ]
             })
 
-    # === Préchargement des données si nécessaires ===
-    if lang not in cache["tfidf_matrix"]:
+    # 🔁 Catégorie reconnue (fallback non text)
+    if lang not in cache["texts_embeddings"]:
         preload_language_data(lang)
 
-    # === Étape 2 : noms des catégories ===
     categories = cache["categories"].get(lang, [])
     if categories:
-        cat_vectorizer = cache["cat_vectorizer"][lang]
-        cat_matrix = cache["cat_matrix"][lang]
-        q_vector = cat_vectorizer.transform([question_clean])
-        similarities = cosine_similarity(q_vector, cat_matrix).flatten()
-        best_index = similarities.argmax()
-        best_score = similarities[best_index]
+        cat_embeddings = cache["cat_embeddings"][lang]
+        q_embed = model_intent.encode([question_clean], convert_to_tensor=True)
+        scores = util.cos_sim(q_embed, cat_embeddings)[0]
+        best_index = int(scores.argmax())
+        best_score = float(scores[best_index])
 
         if best_score >= 0.3:
             best_cat = categories[best_index]
@@ -187,25 +217,51 @@ def ask_question(question_text):
             ).all()
             if fallback_responses:
                 r = fallback_responses[0]
+                session["last_answer"] = {
+                    "answer_fr": r.answer_fr,
+                    "answer_en": r.answer_en,
+                    "answer_ar": r.answer_ar,
+                    "type": r.type,
+                    "category": best_cat.get_translated_name(lang),
+                    "response_id": r.id,
+                    "file_url": r.file_url
+                }
                 return jsonify({
                     "response": getattr(r, answer_field) or "",
                     "type": r.type,
                     "category": best_cat.get_translated_name(lang),
                     "response_id": r.id,
-                    "file_url": r.file_url
+                    "file_url": r.file_url,
+                    "suggestions": [
+                        { "label": "🔙 Revenir au menu", "action": "restart" },
+                        { "label": "✅ Terminer", "action": "end" }
+                    ]
                 })
 
-    # === Étape 3 : réponses `text` ===
+            # 🔁 Suggérer les sous-catégories visibles si aucun fallback
+            subcats = Category.query.filter_by(parent_id=best_cat.id, visible=True).all()
+            if subcats:
+                return jsonify({
+                    "clarification_required": True,
+                    "clarification_options": [
+                        { "category_id": c.id, "label": c.get_translated_name(lang) } for c in subcats
+                    ],
+                    "suggestions": [
+                        { "label": "🔙 Revenir au menu", "action": "restart" },
+                        { "label": "✅ Terminer", "action": "end" }
+                    ]
+                })
+
+    # 🔁 Réponses textuelles
     responses = cache["text_responses"].get(lang, [])
     if responses:
-        vectorizer = cache["vectorizer"][lang]
-        tfidf_matrix = cache["tfidf_matrix"][lang]
-        q_vector = vectorizer.transform([question_clean])
-        similarities = cosine_similarity(q_vector, tfidf_matrix).flatten()
-        best_index = similarities.argmax()
-        best_score = similarities[best_index]
+        texts_embeddings = cache["texts_embeddings"][lang]
+        q_embed = model_intent.encode([question_clean], convert_to_tensor=True)
+        scores = util.cos_sim(q_embed, texts_embeddings)[0]
+        best_index = int(scores.argmax())
+        best_score = float(scores[best_index])
 
-        close_indices = [i for i, score in enumerate(similarities) if score >= 0.3 and abs(score - best_score) <= 0.05]
+        close_indices = [i for i, score in enumerate(scores) if score >= 0.3 and abs(score - best_score) <= 0.05]
         if len(close_indices) >= 2:
             options = [{
                 "response_id": responses[i].id,
@@ -214,30 +270,61 @@ def ask_question(question_text):
             } for i in close_indices]
             return jsonify({
                 "clarification_required": True,
-                "clarification_options": options
+                "clarification_options": options,
+                "suggestions": [
+                    {"label": "🔙 Revenir au menu", "action": "restart"},
+                    {"label": "✅ Terminer", "action": "end"}
+                ]
             })
 
         if best_score >= 0.3:
             r = responses[best_index]
+            session["last_answer"] = {
+                "answer_fr": r.answer_fr,
+                "answer_en": r.answer_en,
+                "answer_ar": r.answer_ar,
+                "type": r.type,
+                "category": r.category.get_translated_name(lang),
+                "response_id": r.id,
+                "file_url": r.file_url
+            }
             return jsonify({
                 "response": getattr(r, answer_field),
                 "type": r.type,
                 "category": r.category.get_translated_name(lang),
                 "response_id": r.id,
-                "file_url": r.file_url
+                "file_url": r.file_url,
+                "suggestions": [
+                    { "label": "🔙 Revenir au menu", "action": "restart" },
+                    { "label": "✅ Terminer", "action": "end" }
+                ]
             })
 
-    # === Étape 4 : aucun résultat ===
+    # 🔁 Aucun résultat
     default_message = {
         "fr": "Désolé, je n’ai pas trouvé de réponse à votre question.",
         "en": "Sorry, I couldn't find an answer to your question.",
         "ar": "عذرًا، لم أتمكن من العثور على إجابة لسؤالك."
-    }.get(lang, "Sorry, I couldn't find an answer.")
+    }
 
-    return jsonify({
-        "response": default_message,
+    session["last_answer"] = {
+        "answer_fr": default_message["fr"],
+        "answer_en": default_message["en"],
+        "answer_ar": default_message["ar"],
         "type": "none",
         "category": None,
         "response_id": None,
         "file_url": None
+    }
+
+    return jsonify({
+        "response": default_message.get(lang, default_message["en"]),
+        "type": "none",
+        "category": None,
+        "response_id": None,
+        "file_url": None,
+        "suggestions": [
+            { "label": "🔙 Revenir au menu", "action": "restart" },
+            { "label": "✅ Terminer", "action": "end" }
+        ]
     })
